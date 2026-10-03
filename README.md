@@ -1,6 +1,8 @@
 # Mutation effects by eye
 
-**Can a person learn to tell which mutations break a protein — and how do they compare with state-of-the-art AI?**
+**Try it: https://matt115a.github.io/Mutations_by_eye/**
+
+**Can a person learn to tell which mutations damage a protein — and how do they compare with state-of-the-art AI?**
 
 Each trial is one measured amino-acid substitution from ProteinGym. At a glance you see the chemistry of the swap,
 what evolution tolerates at that position (alignment column + relatives), and an interactive AlphaFold structure centred on
@@ -19,4 +21,10 @@ npm test
 VITE_PUBLIC=true npm run build    # static site in dist/
 ```
 
-Rebuild the data: `python pipeline/build_dataset.py` (from the parent folder; needs the ProteinGym files in `data/raw/`). See [DATA.md](DATA.md).
+The damaging/tolerated labels are ProteinGym's `DMS_score_bin`: the line is the median mutation for most assays and an
+author-chosen threshold for a few, so "tolerated" means better than that line, not necessarily as good as wild type.
+
+Rebuild the data: the scripts in `pipeline/` expect a project layout of `data/raw/` (ProteinGym files) next to `app/`
+and write `app/public/data/`. See [DATA.md](DATA.md) for sources and licences.
+
+Deploy: `npm run deploy` builds the public version and pushes it to the `gh-pages` branch.

@@ -59,6 +59,11 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
             <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])} />
           </div>
         </div>
+        <p className="note" style={{ marginTop: 22 }}>
+          Data: <a href="https://proteingym.org" target="_blank" rel="noreferrer">ProteinGym</a> (Notin et al.) deep mutational scans, alignments and model scores;
+          structures from the <a href="https://alphafold.ebi.ac.uk" target="_blank" rel="noreferrer">AlphaFold DB</a> (CC BY 4.0).
+          Source, credits and method: <a href="https://github.com/Matt115A/Mutations_by_eye" target="_blank" rel="noreferrer">github.com/Matt115A/Mutations_by_eye</a>.
+        </p>
       </div>
     </div>
   );
