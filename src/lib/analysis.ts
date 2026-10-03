@@ -111,3 +111,29 @@ export function byCue(s: Session, byId: Map<number, Variant>, models: string[]) 
     }),
   }));
 }
+
+// ── model profile: which models answer like you? ──
+
+export interface ModelResemblance { name: string; label: string; kind: string; agree: number; kappa: number; sharedErrors: number | null; accuracy: number }
+
+/** Agreement with each model on your trials: raw %, Cohen's κ (beyond chance), and share of your mistakes the model also made. */
+export function modelProfile(s: Session, byId: Map<number, Variant>, models: { name: string; label: string; kind: string }[]): ModelResemblance[] {
+  const ts = s.trials.filter((t) => byId.has(t.variant_id));
+  const n = ts.length;
+  if (n < 20) return [];
+  const you = ts.map((t) => t.response);
+  const pYou1 = you.filter((x) => x === 1).length / n;
+  const wrong = ts.filter((t) => !t.correct);
+  return models.map((m) => {
+    const calls = ts.map((t) => byId.get(t.variant_id)!.calls[m.name]);
+    const agree = calls.filter((c, i) => c === you[i]).length / n;
+    const pM1 = calls.filter((c) => c === 1).length / n;
+    const pe = pYou1 * pM1 + (1 - pYou1) * (1 - pM1);
+    return {
+      name: m.name, label: m.label, kind: m.kind, agree,
+      kappa: pe >= 1 ? 0 : (agree - pe) / (1 - pe),
+      sharedErrors: wrong.length ? wrong.filter((t) => byId.get(t.variant_id)!.calls[m.name] === t.response).length / wrong.length : null,
+      accuracy: calls.filter((c, i) => c === ts[i].label).length / n,
+    };
+  }).sort((a, b) => b.kappa - a.kappa);
+}

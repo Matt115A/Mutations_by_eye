@@ -290,3 +290,8 @@ table.data tr:last-child td { border-bottom: none; }
 .scrub { display: flex; gap: 12px; align-items: center; } .scrub input[type='range'] { flex: 1; accent-color: var(--text); }
 @media (max-width: 1150px) { .panels { grid-template-columns: 1fr 1fr; } }
 .structure-error { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; color: var(--muted); font-size: 13.5px; line-height: 1.5; background: #141413; }
+.section-title { font-size: 22px; font-weight: 650; margin: 26px 0 12px; letter-spacing: -0.01em; }
+.twin-banner { background: linear-gradient(135deg, rgba(242, 194, 48, .10), rgba(242, 194, 48, .02)); border: 1px solid rgba(242, 194, 48, .35); border-radius: 14px; padding: 18px 22px; margin-bottom: 18px; }
+.twin-label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.twin-name { font-size: 36px; font-weight: 750; letter-spacing: -0.02em; margin: 4px 0 6px; }
+.twin-sub { font-size: 15px; color: var(--text-2); line-height: 1.5; }

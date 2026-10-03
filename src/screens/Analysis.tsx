@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { Bars, C, Card, Legend, LineChart } from '../components/charts';
+import { ModelProfile } from '../components/ModelProfile';
 import { acc, byCue, cueWeights, modelAccuracy, phaseStats, rolling, streamLearners, subsets } from '../lib/analysis';
 import type { Dataset, Session, Variant } from '../lib/types';
 
@@ -28,6 +29,10 @@ export function Analysis({ session, data, byId, priorIds }: { session: Session; 
         <div className="kpi"><div className="kpi-label">VenusREM on the same mutations</div><div className="kpi-value">{pct(modelAccuracy(session.trials, byId, 'VenusREM'))}</div><div className="kpi-sub">state of the art</div></div>
       </div>
 
+      <h2 className="section-title">Your model profile</h2>
+      <ModelProfile session={session} data={data} byId={byId} />
+
+      <h2 className="section-title">Performance</h2>
       <Card title="By part" sub="Accuracy (95% interval). Trials are balanced, half deleterious and half fine, so 50% is chance. 'Caught deleterious' = share of truly deleterious mutations you called deleterious.">
         <table className="data">
           <thead><tr><th>Part</th><th className="num">n</th><th className="num">Accuracy</th><th className="num">95% CI</th><th className="num">Caught deleterious</th><th className="num">Caught fine</th><th className="num">You said deleterious</th><th className="num">Median time</th></tr></thead>

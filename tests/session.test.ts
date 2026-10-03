@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { describe, expect, it } from 'vitest';
-import { cueWeights, modelAccuracy, phaseList, streamLearners } from '../src/lib/analysis';
+import { cueWeights, modelAccuracy, modelProfile, phaseList, streamLearners } from '../src/lib/analysis';
 import { parseDataset } from '../src/lib/dataset';
 import { CSV_COLUMNS, trialsToCsv } from '../src/lib/export';
 import { SessionCore } from '../src/lib/session';
@@ -71,5 +71,20 @@ describe('analysis', () => {
   it('cue weights: truth weights exposure positively (exposed mutations are more often fine)', () => {
     const cw = cueWeights(s, data, byId)!;
     expect(cw.truth[cw.names.indexOf('Exposed (RSA)')]).toBeGreaterThan(0);
+  });
+});
+
+describe('model profile', () => {
+  it('ranks models by κ and maps you among them', () => {
+    const s = simulateSession(DEFAULT_CONFIG, data, 7);
+    const prof = modelProfile(s, byId, data.models);
+    expect(prof).toHaveLength(data.models.length);
+    for (let i = 1; i < prof.length; i++) expect(prof[i - 1].kappa).toBeGreaterThanOrEqual(prof[i].kappa);
+    for (const p of prof) { expect(p.kappa).toBeLessThanOrEqual(1); expect(p.agree).toBeGreaterThanOrEqual(0); }
+    // a "player" who copies VenusREM exactly must have VenusREM as its twin with κ = 1
+    const copy = { ...s, trials: s.trials.map((t) => { const r = byId.get(t.variant_id)!.calls.VenusREM; return { ...t, response: r, correct: r === t.label }; }) };
+    const p2 = modelProfile(copy, byId, data.models);
+    expect(p2[0].kappa).toBeCloseTo(1, 6);
+    expect(p2.find((p) => p.name === 'VenusREM')!.kappa).toBeCloseTo(1, 6);
   });
 });
