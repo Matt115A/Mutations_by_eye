@@ -100,9 +100,9 @@ export function Experiment({ core, aa, onEnd }: { core: SessionCore; aa: string;
           <div className="answer-bar">
             {state === 'feedback' && last ? <Feedback t={last} v={v} /> : (
               <div className="answer-keys">
-                <div className="answer-key del"><kbd>{keys[0]}</kbd> Deleterious <span className="muted">breaks it</span></div>
-                <div className="answer-q muted">Does this mutation break the protein?</div>
-                <div className="answer-key fit"><kbd>{keys[1]}</kbd> Neutral or better <span className="muted">fine</span></div>
+                <div className="answer-key del"><kbd>{keys[0]}</kbd> Damaging</div>
+                <div className="answer-q muted">Damaging or tolerated?</div>
+                <div className="answer-key fit"><kbd>{keys[1]}</kbd> Tolerated</div>
               </div>
             )}
           </div>
@@ -124,14 +124,14 @@ function Feedback({ t, v }: { t: TrialRecord; v: Variant }) {
   const cutoff = v.protein.frac_del;
   return (
     <div className={`feedback ${t.correct ? 'ok' : 'no'}`}>
-      <div className="fb-verdict">{t.correct ? '✓ Correct' : '✗ Wrong'} <span className="muted">— you said {said === 0 ? 'deleterious' : 'neutral or better'}</span></div>
+      <div className="fb-verdict">{t.correct ? '✓ Correct' : '✗ Wrong'} <span className="muted">— you said {said === 0 ? 'damaging' : 'tolerated'}</span></div>
       <div className="fb-measured">
-        Measured: <b className={v.label === 0 ? 'bad' : 'good'}>{v.label === 0 ? 'deleterious' : 'neutral or better'}</b>
-        <span className="muted"> · better than {Math.round(v.pct * 100)}% of mutations in this assay</span>
+        Measured: <b className={v.label === 0 ? 'bad' : 'good'}>{v.label === 0 ? 'damaging' : 'tolerated'}</b>
+        <span className="muted"> · better than {Math.round(v.pct * 100)}% of mutations in this experiment · line = {v.protein.cutoff === 'median' ? 'the median mutation' : 'threshold set by the authors'}</span>
       </div>
       <div className="fb-track" title="all mutations in this assay, worst → best">
         <div className="fb-del" style={{ width: `${cutoff * 100}%` }} />
-        <div className="fb-cut" style={{ left: `${cutoff * 100}%` }}><span>cutoff</span></div>
+        <div className="fb-cut" style={{ left: `${cutoff * 100}%` }}><span>{v.protein.cutoff === 'median' ? 'median' : 'cutoff'}</span></div>
         <div className="fb-mark" style={{ left: `${v.pct * 100}%` }} />
       </div>
       <div className="fb-next muted">Press <kbd>Space</kbd> for the next mutation · rotate the structure to see why</div>

@@ -22,21 +22,22 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
     <div className="screen">
       <div className="setup" style={{ width: 'min(960px, 100%)' }}>
         <h1 className="title">Mutation effects by eye</h1>
-        <p className="subtitle">Real protein experiments (ProteinGym deep mutational scans) · learn to tell which mutations break a protein.</p>
+        <p className="subtitle">Real protein experiments (ProteinGym deep mutational scans) · learn to tell which mutations damage a protein.</p>
         <div className="card" style={{ marginBottom: 18 }}>
           <h3 className="card-title">What is this?</h3>
           <p className="card-sub" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
             Each trial is one amino-acid change in a real protein, measured in a lab experiment. You see three things at a glance: the <b>chemistry</b> of the swap,
             how often <b>evolution</b> tolerates it (the alignment of related proteins), and <b>where it sits in the 3D structure</b>. Decide whether it is
-            <b> deleterious</b> or <b>neutral or better</b>, and learn from the feedback. At the end you're compared, on exactly the same mutations, with simple
+            <b> damaging</b> or <b>tolerated</b>, and learn from the feedback. The line between the two is drawn per experiment: for most proteins it is the
+            median mutation (so half of all mutations count as damaging), for a few it is a threshold chosen by the scientists who ran it — see the table. At the end you're compared, on exactly the same mutations, with simple
             rules and with state-of-the-art AI models (ESM, EVE, SaProt, VenusREM…). Results stay in this browser. Press <kbd>Esc</kbd> to pause.
           </p>
         </div>
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="card-head"><div><h3 className="card-title">Proteins</h3><p className="card-sub">{data.variants.length.toLocaleString()} measured mutations across {data.proteins.length} proteins.</p></div></div>
           <table className="data">
-            <thead><tr><th>Protein</th><th>Organism</th><th>Measured</th><th>Used for</th><th className="num">Relatives in MSA</th></tr></thead>
-            <tbody>{data.proteins.map((p) => <tr key={p.id}><td>{p.name}</td><td className="muted">{p.organism}</td><td className="muted">{p.selection}</td><td>{GROUP_TEXT[p.group]}</td><td className="num">{p.nseq.toLocaleString()}</td></tr>)}</tbody>
+            <thead><tr><th>Protein</th><th>Organism</th><th>Measured</th><th>Damaging/tolerated line</th><th>Used for</th><th className="num">Relatives in MSA</th></tr></thead>
+            <tbody>{data.proteins.map((p) => <tr key={p.id}><td>{p.name}</td><td className="muted">{p.organism}</td><td className="muted">{p.selection}</td><td className="muted">{p.cutoff === 'median' ? 'median mutation' : `set by authors (${Math.round(p.frac_del * 100)}% damaging)`}</td><td>{GROUP_TEXT[p.group]}</td><td className="num">{p.nseq.toLocaleString()}</td></tr>)}</tbody>
           </table>
         </div>
         <div className="card" style={{ marginBottom: 18 }}>
@@ -46,7 +47,7 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
           <p className="note" style={{ marginTop: 8 }}>{total} mutations · self-paced (roughly 30–50 min). {history.length ? `You've done ${history.reduce((a, e) => a + e.n_trials, 0)} before — those won't be repeated.` : ''}</p>
         </div>
         <div className="setup-grid">
-          <div className="field"><label>Keys: deleterious · neutral-or-better</label><input type="text" value={keysText} maxLength={2} onChange={(e) => setKeysText(e.target.value.toUpperCase())} /></div>
+          <div className="field"><label>Keys: damaging · tolerated</label><input type="text" value={keysText} maxLength={2} onChange={(e) => setKeysText(e.target.value.toUpperCase())} /></div>
         </div>
         {history.length > 0 && <p className="note">Previous sessions: {history.map((h) => `${new Date(h.start_time).toLocaleDateString()} (${h.n_trials} trials, ${pct(h.final.acc)})`).join(' · ')}</p>}
         {debug && <div className="debug-panel"><h4>DEBUG</h4><button className="btn btn-sm" onClick={() => onSimulate(cfg)}>Simulate full session</button></div>}

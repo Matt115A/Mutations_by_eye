@@ -33,9 +33,9 @@ export function Analysis({ session, data, byId, priorIds }: { session: Session; 
       <ModelProfile session={session} data={data} byId={byId} />
 
       <h2 className="section-title">Performance</h2>
-      <Card title="By part" sub="Accuracy (95% interval). Trials are balanced, half deleterious and half fine, so 50% is chance. 'Caught deleterious' = share of truly deleterious mutations you called deleterious.">
+      <Card title="By part" sub="Accuracy (95% interval). Trials are balanced, half damaging and half tolerated, so 50% is chance. 'Caught damaging' = share of truly damaging mutations you called damaging.">
         <table className="data">
-          <thead><tr><th>Part</th><th className="num">n</th><th className="num">Accuracy</th><th className="num">95% CI</th><th className="num">Caught deleterious</th><th className="num">Caught fine</th><th className="num">You said deleterious</th><th className="num">Median time</th></tr></thead>
+          <thead><tr><th>Part</th><th className="num">n</th><th className="num">Accuracy</th><th className="num">95% CI</th><th className="num">Caught damaging</th><th className="num">Caught tolerated</th><th className="num">You said damaging</th><th className="num">Median time</th></tr></thead>
           <tbody>{r.phases.map((p) => <tr key={p.name}><td><b>{p.label}</b></td><td className="num">{p.n}</td><td className="num"><b>{pct(p.acc)}</b></td><td className="num muted">{pct(p.ci[0])}–{pct(p.ci[1])}</td><td className="num">{pct(p.hitDel)}</td><td className="num">{pct(p.hitFit)}</td><td className="num">{pct(p.saidDel)}</td><td className="num">{p.rt ? `${(p.rt / 1000).toFixed(1)} s` : '—'}</td></tr>)}</tbody>
         </table>
       </Card>
@@ -49,7 +49,7 @@ export function Analysis({ session, data, byId, priorIds }: { session: Session; 
       </Card>
 
       <Card title="Benchmark on identical mutations" svgRef={refs.bench} exportName="benchmark"
-        sub="Every model's call on exactly the mutations you saw. Model scores are turned into calls per protein at the protein's true share of deleterious mutations.">
+        sub="Every model's call on exactly the mutations you saw. Model scores are turned into calls per protein at the protein's true share of damaging mutations.">
         <div style={{ overflowX: 'auto' }}>
           <table className="data">
             <thead><tr><th>Who</th>{r.subs.map((s) => <th key={s.key} className="num">{s.label} <span className="muted">({s.trials.length})</span></th>)}</tr></thead>
@@ -65,7 +65,7 @@ export function Analysis({ session, data, byId, priorIds }: { session: Session; 
 
       <div className="grid2">
         <Card title="What drives your answers?" svgRef={refs.cues} exportName="cue_weights"
-          sub="How strongly each cue pushes towards 'neutral or better' (standardised weights). Compare what you relied on with what actually predicted the outcome, and with VenusREM.">
+          sub="How strongly each cue pushes towards 'tolerated' (standardised weights). Compare what you relied on with what actually predicted the outcome, and with VenusREM.">
           {!r.cues ? <div className="empty">Needs at least 30 trials.</div> : (
             <table className="data">
               <thead><tr><th>Cue</th><th className="num">You</th><th className="num">Truth</th><th className="num">VenusREM</th></tr></thead>

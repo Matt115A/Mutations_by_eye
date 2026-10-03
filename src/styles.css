@@ -273,7 +273,7 @@ table.data tr:last-child td { border-bottom: none; }
 .feedback .fb-verdict { font-size: 20px; font-weight: 650; }
 .feedback.ok .fb-verdict { color: var(--good); } .feedback.no .fb-verdict { color: var(--bad); }
 .fb-measured { margin-top: 4px; font-size: 15px; }
-.fb-track { position: relative; height: 12px; margin: 14px 0 8px; background: rgba(60, 207, 126, .25); border-radius: 6px; }
+.fb-track { position: relative; height: 12px; margin: 24px 0 8px; background: rgba(60, 207, 126, .25); border-radius: 6px; }
 .fb-del { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(239, 83, 80, .35); border-radius: 6px 0 0 6px; }
 .fb-cut { position: absolute; top: -6px; bottom: -6px; width: 2px; background: #ccc; }
 .fb-cut span { position: absolute; top: -16px; left: -16px; font-size: 11px; color: var(--muted); }

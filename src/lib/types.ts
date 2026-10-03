@@ -1,4 +1,7 @@
-/** 1 = neutral or better than wild type ("fit"), 0 = deleterious — ProteinGym's DMS_score_bin. */
+/**
+ * ProteinGym's DMS_score_bin: 1 = tolerated ("fit"), 0 = damaging. The line is set per experiment — the median
+ * mutation for most assays, or a threshold chosen by the original authors — so it is not "as good as wild type".
+ */
 export type Label = 0 | 1;
 export type Group = 'learn' | 'new' | 'shallow';
 export type FeedbackMode = 'none' | 'correctness' | 'reveal';
@@ -15,7 +18,7 @@ export interface PhaseSpec {
 
 export interface Config {
   protocol: string;
-  /** Keys for [deleterious, neutral-or-better]. */
+  /** Keys for [damaging, tolerated]. */
   keys: [string, string];
   phases: PhaseSpec[];
   maxDurationMin: number;
@@ -29,7 +32,7 @@ export const PRESETS: Record<string, { title: string; description: string; phase
     description: 'Learn on six proteins with feedback, then predict mutations in two proteins you have never seen, then in two proteins with very few known relatives.',
     phases: [
       { name: 'learn', label: 'Learning (6 proteins)', trials: 144, group: 'learn', feedback: 'reveal',
-        intro: 'Part 1 of 3 — learning.\nEach trial is one mutation in a real protein. Decide: does it break the protein (deleterious), or is it fine (neutral or better)?\nAfter each answer you\'ll see what the experiment measured. Press Space to move on.' },
+        intro: 'Part 1 of 3 — learning.\nEach trial is one mutation in a real protein. Decide: is it damaging (worse than most mutations in this experiment), or tolerated?\nAfter each answer you\'ll see what the experiment measured. Press Space to move on.' },
       { name: 'new', label: 'New proteins', trials: 48, group: 'new', feedback: 'reveal',
         intro: 'Part 2 of 3 — two proteins you haven\'t seen.\nSame task. Use what you learned.' },
       { name: 'shallow', label: 'Proteins with few relatives', trials: 48, group: 'shallow', feedback: 'reveal',
@@ -77,6 +80,8 @@ export interface Protein {
   neff: number;
   nseq: number;
   frac_del: number;
+  /** How ProteinGym drew the damaging/tolerated line: 'median' of the assay, or 'manual' (set by the authors). */
+  cutoff: 'median' | 'manual';
   msa_rows: { seq: string; id: number }[];
   positions: Record<string, PositionInfo>;
 }

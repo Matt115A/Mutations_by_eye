@@ -21,9 +21,9 @@ export function Replay({ session, data, byId }: { session: Session; data: Datase
       <MutationHeader v={v} />
       <div className="panels"><ChemistryPanel v={v} /><MsaPanel v={v} aa={data.aa} /><StructurePanel v={v} height={300} /></div>
       <div className="card" style={{ marginTop: 14 }}>
-        <h3 className="card-title">Measured: <span className={v.label === 0 ? 'bad' : 'good'}>{v.label === 0 ? 'deleterious' : 'neutral or better'}</span> <span className="muted" style={{ fontSize: 14 }}>(better than {Math.round(v.pct * 100)}% of mutations in this assay)</span></h3>
+        <h3 className="card-title">Measured: <span className={v.label === 0 ? 'bad' : 'good'}>{v.label === 0 ? 'damaging' : 'tolerated'}</span> <span className="muted" style={{ fontSize: 14 }}>(better than {Math.round(v.pct * 100)}% of mutations in this assay)</span></h3>
         <div className="model-grid">
-          <span className={`badge ${t.correct ? 'badge-good' : 'badge-bad'}`}>You: {t.response === 0 ? 'deleterious' : 'fine'} {t.correct ? '✓' : '✗'}</span>
+          <span className={`badge ${t.correct ? 'badge-good' : 'badge-bad'}`}>You: {t.response === 0 ? 'damaging' : 'tolerated'} {t.correct ? '✓' : '✗'}</span>
           {data.models.map((m) => { const ok = v.calls[m.name] === v.label; return <span key={m.name} className={`badge ${ok ? 'badge-good' : 'badge-bad'}`}>{m.label.replace(' (sees what you see)', '')}: {v.calls[m.name] === 0 ? 'del.' : 'fine'} {ok ? '✓' : '✗'}</span>; })}
         </div>
       </div>

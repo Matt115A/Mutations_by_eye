@@ -4,7 +4,7 @@
 
 Each trial is one measured amino-acid substitution from ProteinGym. At a glance you see the chemistry of the swap,
 what evolution tolerates at that position (alignment column + relatives), and an interactive AlphaFold structure centred on
-the residue. Press **F** (deleterious) or **J** (neutral or better), and learn from the measured result.
+the residue. Press **F** (damaging) or **J** (tolerated), and learn from the measured result.
 
 **Session 1:** learn on 6 proteins (144 mutations) → 2 proteins you've never seen (48) → 2 proteins with very few known relatives (48),
 where alignment-based cues and protein language models get much weaker.
