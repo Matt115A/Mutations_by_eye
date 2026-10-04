@@ -21,6 +21,7 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
   return (
     <div className="screen">
       <div className="setup" style={{ width: 'min(960px, 100%)' }}>
+        <a className="bioai-link" href="https://matt115a.github.io/BioAI_by_eye/">PART OF BIOAI BY EYE →</a>
         <h1 className="title">Mutation effects by eye</h1>
         <p className="subtitle">Real protein experiments (ProteinGym deep mutational scans) · learn to tell which mutations damage a protein.</p>
         <div className="card" style={{ marginBottom: 18 }}>

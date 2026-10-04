@@ -3,6 +3,8 @@ import { downloadCsv, downloadMetadata, downloadSessionJson } from '../lib/expor
 import { type HistoryEntry, priorTo } from '../lib/history';
 import type { Dataset, Session } from '../lib/types';
 import { Analysis } from './Analysis';
+import { ContributeCard } from '../components/ContributeCard';
+import { buildContribution } from '../lib/bioai';
 import { Replay } from './Replay';
 
 export function Results({ session, data, history, onNew }: { session: Session; data: Dataset; history: HistoryEntry[]; onNew: () => void }) {
@@ -23,6 +25,7 @@ export function Results({ session, data, history, onNew }: { session: Session; d
           <button className="btn btn-sm btn-primary" onClick={onNew}>Back to start</button>
         </div>
       </div>
+      <ContributeCard sessionId={m.session_id} simulated={!!m.simulated} contribution={buildContribution('mutations', String(m.app_version ?? ''), String(m.dataset_version ?? ''), ['learn', 'new', 'shallow'], session.trials.map((t) => ({ item: t.variant_id, response: String(t.response), phase: t.phase, rt: t.rt_ms })))} />
       {missing ? <div className="card empty">This session used a different dataset version ({m.dataset_version}).</div>
         : tab === 'analysis' ? <Analysis session={session} data={data} byId={byId} priorIds={prior.flatMap((e) => e.window_ids)} /> : <Replay session={session} data={data} byId={byId} />}
     </div>
