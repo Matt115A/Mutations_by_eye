@@ -46,7 +46,7 @@ export const DEFAULT_CONFIG: Config = {
   keys: ['F', 'J'],
   phases: PRESETS.session1.phases,
   maxDurationMin: 60,
-  hudWindow: 30,
+  hudWindow: 20,
   excludeSeen: true,
 };
 

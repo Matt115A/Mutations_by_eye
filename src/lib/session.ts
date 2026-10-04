@@ -4,7 +4,7 @@ import { mutationName } from './dataset';
 
 export const APP_VERSION = '1.0.0';
 
-export interface ResponseInput { v: Variant; block: number; pressedKey: string; rtMs: number; onsetPerf: number; responsePerf: number; wallOnset: Date; elapsedMs: number }
+export interface ResponseInput { v: Variant; block: number; pressedKey: string; /** set for taps/clicks; otherwise derived from the key */ label?: Label; rtMs: number; onsetPerf: number; responsePerf: number; wallOnset: Date; elapsedMs: number }
 
 /**
  * Experiment rules, no DOM. Parts run in order; each draws from its protein group in blocks of 8
@@ -46,7 +46,7 @@ export class SessionCore {
       phase_starts: { [config.phases[0].name]: 1 }, prior: opts.prior ?? { sessions: 0, trials: 0, session_ids: [], excluded_windows: 0 },
       start_time: start.toISOString(), end_time: null, end_reason: null, total_trials: 0, active_duration_ms: 0, paused_ms: 0,
       environment: { user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : 'node', estimated_frame_ms: null, screen: typeof screen !== 'undefined' ? `${screen.width}x${screen.height}` : 'n/a' },
-      timing_notes: 'Onset = first animation frame after the trial panels rendered; response = keydown timeStamp. Trials are self-paced and long, so RT is a rough measure here.',
+      timing_notes: 'Onset = first animation frame after the trial panels rendered; response = keydown (or tap/click) timeStamp. Trials are self-paced and long, so RT is a rough measure here.',
     };
   }
 
@@ -101,7 +101,7 @@ export class SessionCore {
 
   record(r: ResponseInput): { trial: TrialRecord; next: PhaseSpec | null; finished: boolean } {
     const ph = this.phase!;
-    const response = this.keyToLabel(r.pressedKey)!;
+    const response = r.label ?? this.keyToLabel(r.pressedKey)!;
     const trial: TrialRecord = {
       trial: this.trials.length + 1, timestamp: r.wallOnset.toISOString(), elapsed_ms: Math.round(r.elapsedMs), phase: ph.name, feedback: ph.feedback,
       block: r.block, variant_id: r.v.id, protein: r.v.protein.id, group: r.v.protein.group, mutation: mutationName(r.v), label: r.v.label, response,

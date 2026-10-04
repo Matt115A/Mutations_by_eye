@@ -55,12 +55,15 @@ export function ModelProfile({ session, data, byId }: { session: Session; data: 
   );
 }
 
+const COMPACT: Record<string, string> = { 'MSA conservation': 'Conserv.', 'Mutant seen in MSA': 'Mut. in MSA', 'Feature model': 'Features', 'Site-independent': 'Site-indep.', 'TranceptEVE L': 'TrEVE', 'ESM2 650M': 'ESM2', 'SaProt 650M': 'SaProt' };
 const FAMILY_ORDER = ['simple', 'classic', 'msa', 'plm', 'structure'];
 
 /** You at the centre; each model on its own spoke, closer in = answers more like you (higher κ). Spokes grouped by family. */
 function OrbitPlot({ prof, svgRef }: { prof: ModelResemblance[]; svgRef: React.RefObject<SVGSVGElement | null> }) {
   const [wrap, width] = useWidth<HTMLDivElement>();
-  const H = 430, cx = width / 2, cy = H / 2 + 4, R = Math.min(H / 2 - 40, width / 2 - 130);
+  const compact = width < 520;   // phones: abbreviated labels, tighter label margin
+  const R = Math.max(60, Math.min(175, width / 2 - (compact ? 78 : 130))), H = 2 * R + 80, cx = width / 2, cy = H / 2 + 4;
+  const name = (l: string) => (compact ? COMPACT[short(l)] ?? short(l) : short(l));
   const top = Math.max(0.3, Math.ceil(Math.max(...prof.map((p) => p.kappa)) * 10 + 1) / 10), bot = Math.min(0, Math.floor(Math.min(...prof.map((p) => p.kappa)) * 10) / 10);
   const rOf = (k: number) => 14 + ((top - k) / (top - bot)) * (R - 14);
   const items = FAMILY_ORDER.flatMap((f) => prof.filter((p) => p.kind === f).sort((a, b) => b.kappa - a.kappa));
@@ -88,7 +91,7 @@ function OrbitPlot({ prof, svgRef }: { prof: ModelResemblance[]; svgRef: React.R
               <line x1={cx + 10 * Math.cos(p.a)} y1={cy + 10 * Math.sin(p.a)} x2={cx + R * Math.cos(p.a)} y2={cy + R * Math.sin(p.a)} stroke={C.grid} />
               {isBest && <line x1={cx} y1={cy} x2={x} y2={y} stroke={C.yellow} strokeWidth={1.5} strokeDasharray="4 3" />}
               <circle cx={x} cy={y} r={isBest ? 9 : 7} fill={KIND_COLOR[p.kind]} stroke={isBest ? C.yellow : C.surface} strokeWidth={isBest ? 2.5 : 2}><title>{`${short(p.label)}: κ ${p.kappa.toFixed(2)}, same answer ${pct(p.agree)}`}</title></circle>
-              <text x={lx} y={ly + (Math.sin(p.a) > 0.6 ? 8 : Math.sin(p.a) < -0.6 ? -4 : 0)} dy="0.35em" textAnchor={anchor} fill={isBest ? C.text : C.text2} fontWeight={isBest ? 700 : 400} fontSize={12}>{short(p.label)}</text>
+              <text x={lx} y={ly + (Math.sin(p.a) > 0.6 ? 8 : Math.sin(p.a) < -0.6 ? -4 : 0)} dy="0.35em" textAnchor={anchor} fill={isBest ? C.text : C.text2} fontWeight={isBest ? 700 : 400} fontSize={compact ? 10.5 : 12}>{name(p.label)}</text>
             </g>
           );
         })}

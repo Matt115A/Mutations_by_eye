@@ -30,15 +30,15 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
             how often <b>evolution</b> tolerates it (the alignment of related proteins), and <b>where it sits in the 3D structure</b>. Decide whether it is
             <b> damaging</b> or <b>tolerated</b>, and learn from the feedback. The line between the two is drawn per experiment: for most proteins it is the
             median mutation (so half of all mutations count as damaging), for a few it is a threshold chosen by the scientists who ran it — see the table. At the end you're compared, on exactly the same mutations, with simple
-            rules and with state-of-the-art AI models (ESM, EVE, SaProt, VenusREM…). Results stay in this browser. Press <kbd>Esc</kbd> to pause.
+            rules and with state-of-the-art AI models (ESM, EVE, SaProt, VenusREM…). A live leaderboard lets you race a model of your choice as you go. Works with a keyboard or by tapping on a phone. Results stay in this browser.
           </p>
         </div>
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="card-head"><div><h3 className="card-title">Proteins</h3><p className="card-sub">{data.variants.length.toLocaleString()} measured mutations across {data.proteins.length} proteins.</p></div></div>
-          <table className="data">
+          <div className="table-scroll"><table className="data">
             <thead><tr><th>Protein</th><th>Organism</th><th>Measured</th><th>Damaging/tolerated line</th><th>Used for</th><th className="num">Relatives in MSA</th></tr></thead>
             <tbody>{data.proteins.map((p) => <tr key={p.id}><td>{p.name}</td><td className="muted">{p.organism}</td><td className="muted">{p.selection}</td><td className="muted">{p.cutoff === 'median' ? 'median mutation' : `set by authors (${Math.round(p.frac_del * 100)}% damaging)`}</td><td>{GROUP_TEXT[p.group]}</td><td className="num">{p.nseq.toLocaleString()}</td></tr>)}</tbody>
-          </table>
+          </table></div>
         </div>
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="card-head"><div><h3 className="card-title">{PRESETS[c.protocol].title}</h3><p className="card-sub">{PRESETS[c.protocol].description}</p></div></div>
@@ -46,7 +46,7 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
             <tbody>{c.phases.map((p, i) => <tr key={p.name}><td>{i + 1}. {p.label}</td><td className="num">{debug ? <input type="number" style={{ width: 70 }} value={p.trials} onChange={(e) => setC({ ...c, phases: c.phases.map((q, j) => (j === i ? { ...q, trials: Number(e.target.value) } : q)) })} /> : p.trials}</td><td className="muted">{p.feedback === 'reveal' ? 'right / wrong + measured effect' : p.feedback}</td></tr>)}</tbody></table>
           <p className="note" style={{ marginTop: 8 }}>{total} mutations · self-paced (roughly 30–50 min). {history.length ? `You've done ${history.reduce((a, e) => a + e.n_trials, 0)} before — those won't be repeated.` : ''}</p>
         </div>
-        <div className="setup-grid">
+        <div className="setup-grid keys-field">
           <div className="field"><label>Keys: damaging · tolerated</label><input type="text" value={keysText} maxLength={2} onChange={(e) => setKeysText(e.target.value.toUpperCase())} /></div>
         </div>
         {history.length > 0 && <p className="note">Previous sessions: {history.map((h) => `${new Date(h.start_time).toLocaleDateString()} (${h.n_trials} trials, ${pct(h.final.acc)})`).join(' · ')}</p>}

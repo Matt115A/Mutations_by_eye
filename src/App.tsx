@@ -40,7 +40,7 @@ export default function App() {
         onStart={(c) => { setConfig(c); setCore(new SessionCore(c, data, priorFrom(history))); setScreen('experiment'); }}
         onSimulate={(c) => { const s = simulateSession(c, data, undefined, priorFrom(history)); saveLocal(s); setSession(s); setScreen('results'); }}
         onOpenSession={(s) => { setSession(s); setScreen('results'); }} />}
-      {screen === 'experiment' && core && <Experiment core={core} aa={data.aa} onEnd={(s) => { setHistory(addToHistory(s)); setSession(s); setCore(null); setScreen('results'); }} />}
+      {screen === 'experiment' && core && <Experiment core={core} aa={data.aa} models={data.models} onEnd={(s) => { setHistory(addToHistory(s)); setSession(s); setCore(null); setScreen('results'); }} />}
       {screen === 'results' && session && <Results session={session} data={data} history={history} onNew={() => setScreen('setup')} />}
     </>
   );

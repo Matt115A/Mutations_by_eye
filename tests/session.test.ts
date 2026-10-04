@@ -88,3 +88,23 @@ describe('model profile', () => {
     expect(p2.find((p) => p.name === 'VenusREM')!.kappa).toBeCloseTo(1, 6);
   });
 });
+
+describe('live leaderboard', () => {
+  it('scores you and every model on the same answered mutations', async () => {
+    const { boardRows } = await import('../src/components/LiveBoard');
+    const core = new SessionCore(DEFAULT_CONFIG, data, { seed: 3 });
+    const seen: typeof data.variants = [];
+    for (let i = 0; i < 30; i++) {
+      const s = core.nextStimulus()!;
+      core.record({ v: s.v, block: s.block, pressedKey: 'TAP', label: (i % 3 ? s.v.label : 1 - s.v.label) as 0 | 1, rtMs: 3000, onsetPerf: i * 5000, responsePerf: i * 5000 + 3000, wallOnset: new Date(), elapsedMs: i * 5000 });
+      seen.push(s.v);
+    }
+    expect(core.trials[0].pressed_key).toBe('TAP');
+    const rows = boardRows(seen, core.trials.map((t) => t.correct), data.models, 20);
+    expect(rows[0].all).toBeCloseTo(20 / 30, 6);
+    expect(rows[0].recent).toBeCloseTo(core.trials.slice(10).filter((t) => t.correct).length / 20, 6);
+    const venus = rows.find((r) => r.name === 'VenusREM')!;
+    expect(venus.all).toBeCloseTo(seen.filter((v) => v.calls.VenusREM === v.label).length / 30, 6);
+    expect(rows).toHaveLength(data.models.length + 1);
+  });
+});

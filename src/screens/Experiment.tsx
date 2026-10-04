@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LiveBoard } from '../components/LiveBoard';
 import { ChemistryPanel, MsaPanel, MutationHeader, StructurePanel } from '../components/TrialPanels';
 import { saveLocal } from '../lib/export';
 import type { SessionCore } from '../lib/session';
-import type { Label, PhaseSpec, Session, TrialRecord, Variant } from '../lib/types';
+import type { Label, ModelInfo, PhaseSpec, Session, TrialRecord, Variant } from '../lib/types';
 
 type State = 'intro' | 'trial' | 'feedback' | 'paused';
+const isTouch = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+const isNarrow = () => typeof innerWidth !== 'undefined' && innerWidth <= 760;
+/** Buttons must never keep focus: Space would then re-click them on the next trial. */
+const noFocus = { tabIndex: -1, onMouseDown: (e: React.MouseEvent) => e.preventDefault() };
 const fmtClock = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
-export function Experiment({ core, aa, onEnd }: { core: SessionCore; aa: string; onEnd: (s: Session) => void }) {
+export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa: string; models: ModelInfo[]; onEnd: (s: Session) => void }) {
   const [state, setState] = useState<State>(core.phase?.intro ? 'intro' : 'trial');
   const [stim, setStim] = useState<{ v: Variant; block: number } | null>(() => core.nextStimulus());
   const [last, setLast] = useState<TrialRecord | null>(null);
@@ -17,8 +22,13 @@ export function Experiment({ core, aa, onEnd }: { core: SessionCore; aa: string;
   const active = useRef({ accum: 0, since: performance.now(), pausedAccum: 0, pauseSince: 0 });
   const prevState = useRef<State>('trial');
   const ended = useRef(false);
+  const seen = useRef<Variant[]>([]);   // variants answered so far, parallel to core.trials (for the live leaderboard)
+  const [touch] = useState(isTouch);
+  const [narrow, setNarrow] = useState(isNarrow);
+  useEffect(() => { const h = () => setNarrow(isNarrow()); addEventListener('resize', h); return () => removeEventListener('resize', h); }, []);
 
-  const activeMs = () => active.current.accum + (state === 'paused' ? 0 : performance.now() - active.current.since);
+  const stateRef = useRef(state); stateRef.current = state;
+  const activeMs = () => active.current.accum + (stateRef.current === 'paused' ? 0 : performance.now() - active.current.since);
 
   const end = useCallback((reason: string) => {
     if (ended.current) return;
@@ -36,7 +46,7 @@ export function Experiment({ core, aa, onEnd }: { core: SessionCore; aa: string;
     return () => cancelAnimationFrame(id);
   }, [state, stim]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { const id = setInterval(() => setClock(activeMs()), 1000); return () => clearInterval(id); }); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const id = setInterval(() => setClock(activeMs()), 500); return () => clearInterval(id); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const advance = useCallback(() => {
     const reason = core.endReason(activeMs());
@@ -44,40 +54,47 @@ export function Experiment({ core, aa, onEnd }: { core: SessionCore; aa: string;
     const s = core.nextStimulus();
     if (!s) return end('pool_exhausted');
     setStim(s);
+    if (narrow) scrollTo({ top: 0 });
     const ph = core.phase;
     if (ph && ph !== phase) { setPhase(ph); setState(ph.intro ? 'intro' : 'trial'); }
     else setState('trial');
-  }, [core, phase, end]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [core, phase, end, narrow]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const togglePause = useCallback(() => {
+    if (state === 'paused') { active.current.pausedAccum += performance.now() - active.current.pauseSince; active.current.since = performance.now(); setState(prevState.current); }
+    else { active.current.accum += performance.now() - active.current.since; active.current.pauseSince = performance.now(); prevState.current = state; setState('paused'); }
+  }, [state]);
+
+  /** One answer, from a key press or a tap/click. `stamp` is the event's timeStamp (same clock as performance.now()). */
+  const respond = useCallback((label: Label, pressedKey: string, stamp: number) => {
+    if (state !== 'trial' || !stim || !onset.current) return;
+    const now = performance.now(), on = onset.current;
+    const resp = stamp > on.perf && stamp <= now + 1 ? stamp : now;
+    const { trial, next, finished } = core.record({ v: stim.v, block: stim.block, pressedKey, label, rtMs: resp - on.perf, onsetPerf: on.perf, responsePerf: resp, wallOnset: on.wall, elapsedMs: on.elapsed });
+    seen.current.push(stim.v);
+    setLast(trial);
+    if (next || trial.trial % 5 === 0) saveLocal(core.snapshot());
+    if (finished) { setState('feedback'); if (phase?.feedback === 'none') end('protocol_complete'); return; }
+    if (phase?.feedback === 'none') advance();
+    else setState('feedback');
+  }, [state, stim, core, phase, advance, end]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        if (state === 'paused') { active.current.pausedAccum += performance.now() - active.current.pauseSince; active.current.since = performance.now(); setState(prevState.current); }
-        else { active.current.accum += performance.now() - active.current.since; active.current.pauseSince = performance.now(); prevState.current = state === 'intro' ? 'intro' : state; setState('paused'); }
-        return;
-      }
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (e.key === 'Escape') { e.preventDefault(); togglePause(); return; }
       if (state === 'intro' && e.code === 'Space') { e.preventDefault(); setState('trial'); return; }
       if (state === 'feedback' && (e.code === 'Space' || e.key === 'Enter')) { e.preventDefault(); advance(); return; }
       if (state !== 'trial' || !stim || e.repeat || e.metaKey || e.ctrlKey) return;
       const label = core.keyToLabel(e.key);
       if (label === null || !onset.current) return;
       e.preventDefault();
-      const now = performance.now(), on = onset.current;
-      const resp = e.timeStamp > on.perf && e.timeStamp <= now + 1 ? e.timeStamp : now;
-      const { trial, next, finished } = core.record({ v: stim.v, block: stim.block, pressedKey: e.key, rtMs: resp - on.perf, onsetPerf: on.perf, responsePerf: resp, wallOnset: on.wall, elapsedMs: on.elapsed });
-      setLast(trial);
-      if (next || trial.trial % 5 === 0) saveLocal(core.snapshot());
-      if (finished) { setState('feedback'); if (phase?.feedback === 'none') end('protocol_complete'); return; }
-      if (phase?.feedback === 'none') advance();
-      else setState('feedback');
+      respond(label, e.key, e.timeStamp);
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [state, stim, core, phase, advance, end]);
+  }, [state, stim, core, advance, togglePause, respond]);
 
-  const acc = core.liveAccuracy(core.config.hudWindow);
   const keys = core.config.keys;
   const v = stim?.v;
   return (
@@ -86,8 +103,8 @@ export function Experiment({ core, aa, onEnd }: { core: SessionCore; aa: string;
         <span><span className="muted">Part</span> <b>{phase?.label ?? '—'}</b></span>
         <span><span className="muted">Trial</span> <b>{core.trials.length + (state === 'feedback' ? 0 : 1)}</b></span>
         <span><span className="muted">Time</span> <b>{fmtClock(clock)}</b></span>
-        <span><span className="muted">Accuracy · last {core.config.hudWindow}</span> <b>{acc == null ? '—' : `${Math.round(acc * 100)}%`}</b></span>
-        <span className="muted" style={{ marginLeft: 'auto' }}>Esc to pause</span>
+        {touch ? <button className="btn btn-sm hud-pause" {...noFocus} onClick={togglePause}>Pause</button> : <span className="muted hud-esc">Esc to pause</span>}
+        <LiveBoard seen={seen.current} correct={core.trials.map((t) => t.correct)} models={models} window={20} />
       </div>
       {v && (
         <>
@@ -95,31 +112,31 @@ export function Experiment({ core, aa, onEnd }: { core: SessionCore; aa: string;
           <div className="panels">
             <ChemistryPanel v={v} />
             <MsaPanel v={v} aa={aa} />
-            <StructurePanel v={v} />
+            <StructurePanel v={v} height={narrow ? 300 : undefined} />
           </div>
           <div className="answer-bar">
-            {state === 'feedback' && last ? <Feedback t={last} v={v} /> : (
+            {state === 'feedback' && last ? <Feedback t={last} v={v} touch={touch} onNext={advance} /> : (
               <div className="answer-keys">
-                <div className="answer-key del"><kbd>{keys[0]}</kbd> Damaging</div>
+                <button className="answer-key del" {...noFocus} onClick={(e) => respond(0, 'TAP', e.timeStamp)}>{!touch && <kbd>{keys[0]}</kbd>} Damaging</button>
                 <div className="answer-q muted">Damaging or tolerated?</div>
-                <div className="answer-key fit"><kbd>{keys[1]}</kbd> Tolerated</div>
+                <button className="answer-key fit" {...noFocus} onClick={(e) => respond(1, 'TAP', e.timeStamp)}>{!touch && <kbd>{keys[1]}</kbd>} Tolerated</button>
               </div>
             )}
           </div>
         </>
       )}
       {state === 'intro' && phase && (
-        <div className="overlay"><div className="intro">{phase.intro.split('\n').map((l, i) => (i ? <p key={i}>{l}</p> : <h2 key={i}>{l}</h2>))}<p className="hint pulse">Press <kbd>Space</kbd> to begin</p></div></div>
+        <div className="overlay"><div className="intro">{phase.intro.split('\n').map((l, i) => (i ? <p key={i}>{l}</p> : <h2 key={i}>{l}</h2>))}<p className="hint">{touch ? null : <span className="pulse">Press <kbd>Space</kbd> or </span>}<button className="btn btn-primary" {...noFocus} onClick={() => setState('trial')}>Begin</button></p></div></div>
       )}
       {state === 'paused' && (
         <div className="overlay"><div className="intro"><h2>Paused</h2><p>The timer is stopped.</p>
-          <div className="row" style={{ justifyContent: 'center' }}><button className="btn btn-primary" onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}>Resume (Esc)</button><button className="btn" onClick={() => end('ended_by_user')}>End session &amp; analyse</button></div></div></div>
+          <div className="row" style={{ justifyContent: 'center' }}><button className="btn btn-primary" {...noFocus} onClick={togglePause}>Resume{touch ? '' : ' (Esc)'}</button><button className="btn" onClick={() => end('ended_by_user')}>End session &amp; analyse</button></div></div></div>
       )}
     </div>
   );
 }
 
-function Feedback({ t, v }: { t: TrialRecord; v: Variant }) {
+function Feedback({ t, v, touch, onNext }: { t: TrialRecord; v: Variant; touch: boolean; onNext: () => void }) {
   const said: Label = t.response;
   const cutoff = v.protein.frac_del;
   return (
@@ -134,7 +151,10 @@ function Feedback({ t, v }: { t: TrialRecord; v: Variant }) {
         <div className="fb-cut" style={{ left: `${cutoff * 100}%` }}><span>{v.protein.cutoff === 'median' ? 'median' : 'cutoff'}</span></div>
         <div className="fb-mark" style={{ left: `${v.pct * 100}%` }} />
       </div>
-      <div className="fb-next muted">Press <kbd>Space</kbd> for the next mutation · rotate the structure to see why</div>
+      <div className="fb-foot">
+        <span className="fb-next muted">{touch ? 'Rotate the structure to see why' : <>Press <kbd>Space</kbd> for the next mutation · rotate the structure to see why</>}</span>
+        <button className="btn btn-primary fb-btn" {...noFocus} onClick={onNext}>Next →</button>
+      </div>
     </div>
   );
 }
