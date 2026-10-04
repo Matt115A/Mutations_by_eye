@@ -108,3 +108,24 @@ describe('live leaderboard', () => {
     expect(rows).toHaveLength(data.models.length + 1);
   });
 });
+
+describe('attempts', () => {
+  it('archives, removes one, and clears all', async () => {
+    const store = new Map<string, string>();
+    (globalThis as Record<string, unknown>).localStorage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) };
+    const { addToHistory, loadArchived, removeFromHistory, clearAllAttempts, loadHistory } = await import('../src/lib/history');
+    const a = simulateSession(DEFAULT_CONFIG, data, 1), b = simulateSession(DEFAULT_CONFIG, data, 2);
+    for (const s of [a, b]) s.meta.simulated = false;
+    b.meta.session_id += '-b';
+    addToHistory(a); addToHistory(b);
+    store.set('prot.rival', 'GEMME');
+    expect(loadHistory()).toHaveLength(2);
+    expect(loadArchived(a.meta.session_id)?.trials.length).toBe(a.trials.length);
+    expect(removeFromHistory(a.meta.session_id)).toHaveLength(1);
+    expect(loadArchived(a.meta.session_id)).toBeNull();
+    expect(clearAllAttempts()).toEqual([]);
+    expect(loadHistory()).toEqual([]);
+    expect(loadArchived(b.meta.session_id)).toBeNull();
+    expect(store.get('prot.rival')).toBe('GEMME');   // preferences survive
+  });
+});

@@ -12,6 +12,22 @@ export interface HistoryEntry {
 }
 
 const KEY = 'prot.history';
+/** Full copies of past sessions (so any attempt can be re-opened), keyed by session id. */
+const ARCHIVE = 'prot.sessions';
+const LAST = 'prot.lastSession';
+
+function loadArchive(): Record<string, Session> {
+  try { return JSON.parse(localStorage.getItem(ARCHIVE) ?? '{}') as Record<string, Session>; } catch { return {}; }
+}
+function saveArchive(a: Record<string, Session>) {
+  // newest first; if storage is full, drop the oldest copies (the history entry itself is kept)
+  let ids = Object.keys(a).sort((x, y) => a[y].meta.start_time.localeCompare(a[x].meta.start_time));
+  while (ids.length) {
+    try { localStorage.setItem(ARCHIVE, JSON.stringify(Object.fromEntries(ids.map((i) => [i, a[i]])))); return; } catch { ids = ids.slice(0, -1); }
+  }
+  try { localStorage.removeItem(ARCHIVE); } catch { /* storage unavailable */ }
+}
+export function loadArchived(id: string): Session | null { return loadArchive()[id] ?? null; }
 
 export function loadHistory(): HistoryEntry[] {
   try { return JSON.parse(localStorage.getItem(KEY) ?? '[]') as HistoryEntry[]; } catch { return []; }
@@ -41,13 +57,22 @@ export function addToHistory(s: Session): HistoryEntry[] {
   h.push(entryFromSession(s));
   h.sort((a, b) => a.start_time.localeCompare(b.start_time));
   save(h);
+  saveArchive({ ...loadArchive(), [s.meta.session_id]: s });
   return h;
 }
 
 export function removeFromHistory(id: string): HistoryEntry[] {
   const h = loadHistory().filter((e) => e.session_id !== id);
   save(h);
+  const a = loadArchive(); delete a[id]; saveArchive(a);
+  try { if ((JSON.parse(localStorage.getItem(LAST) ?? 'null') as Session | null)?.meta.session_id === id) localStorage.removeItem(LAST); } catch { /* ignore */ }
   return h;
+}
+
+/** Forget every attempt on this device: history, saved sessions, and the last-session copy. Preferences (rival model) are kept. */
+export function clearAllAttempts(): HistoryEntry[] {
+  for (const k of [KEY, ARCHIVE, LAST]) { try { localStorage.removeItem(k); } catch { /* storage unavailable */ } }
+  return [];
 }
 
 /** History entries that started before this session (what the participant had already done). */
