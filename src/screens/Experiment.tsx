@@ -103,7 +103,7 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
         <span><span className="muted">Part</span> <b>{phase?.label ?? '—'}</b></span>
         <span><span className="muted">Trial</span> <b>{core.trials.length + (state === 'feedback' ? 0 : 1)}</b></span>
         <span><span className="muted">Time</span> <b>{fmtClock(clock)}</b></span>
-        {touch ? <button className="btn btn-sm hud-pause" {...noFocus} onClick={togglePause}>Pause</button> : <span className="muted hud-esc">Esc to pause</span>}
+        {touch ? <button className="btn btn-sm hud-pause" {...noFocus} onClick={togglePause}>Pause</button> : <span className="muted hud-esc">Esc to pause or stop · progress is saved</span>}
         <LiveBoard seen={seen.current} correct={core.trials.map((t) => t.correct)} models={models} window={20} />
       </div>
       {v && (
@@ -130,7 +130,8 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
       )}
       {state === 'paused' && (
         <div className="overlay"><div className="intro"><h2>Paused</h2><p>The timer is stopped.</p>
-          <div className="row" style={{ justifyContent: 'center' }}><button className="btn btn-primary" {...noFocus} onClick={togglePause}>Resume{touch ? '' : ' (Esc)'}</button><button className="btn" onClick={() => end('ended_by_user')}>End session &amp; analyse</button></div></div></div>
+          <p className="save-note"><b>Need to go?</b> Stop &amp; save keeps your {core.trials.length} answer{core.trials.length === 1 ? '' : 's'} in this browser and shows your results so far. They stay under <b>Your attempts</b>, and next time you start a new run with mutations you haven't seen.</p>
+          <div className="row" style={{ justifyContent: 'center' }}><button className="btn btn-primary" {...noFocus} onClick={togglePause}>Resume{touch ? '' : ' (Esc)'}</button><button className="btn" onClick={() => end('ended_by_user')}>Stop &amp; save · see results</button></div></div></div>
       )}
     </div>
   );

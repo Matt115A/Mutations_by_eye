@@ -61,6 +61,10 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
             <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])} />
           </div>
         </div>
+        <p className="save-note">
+          <b>You don't have to finish in one sitting.</b> Pause at any point (<kbd>Esc</kbd>, or the Pause button on a phone) and choose <b>Stop &amp; save</b>, or just close the tab;
+          your answers are saved in this browser every few mutations. When you come back they're listed under <b>Your attempts</b>, and your next run carries on with mutations you haven't seen yet.
+        </p>
         <p className="note" style={{ marginTop: 22 }}>
           Data: <a href="https://proteingym.org" target="_blank" rel="noreferrer">ProteinGym</a> (Notin et al.) deep mutational scans, alignments and model scores;
           structures from the <a href="https://alphafold.ebi.ac.uk" target="_blank" rel="noreferrer">AlphaFold DB</a> (CC BY 4.0).
