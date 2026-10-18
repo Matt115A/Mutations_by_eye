@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ModelInfo, Variant } from '../lib/types';
 
 const short = (l: string) => l.replace(' (sees what you see)', '').replace(' (MSA)', '');
-const pct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`);
+const pct = (v: number | null) => (v == null ? '–' : `${Math.round(v * 100)}%`);
 const RIVAL_KEY = 'prot.rival';
 
 export function loadRival(models: ModelInfo[]): string {
@@ -57,7 +57,7 @@ export function LiveBoard({ seen, correct, models, window = 20 }: { seen: Varian
         </tbody>
       </table>
       <button className="lb-rank" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onClick={() => setOpen((o) => !o)} title="Show the full leaderboard">
-        <span className="lb-rank-n">{rank == null ? '—' : `#${rank}`}</span>
+        <span className="lb-rank-n">{rank == null ? '–' : `#${rank}`}</span>
         <span className="muted">of {rows.length}</span>
         {lead != null && <span className={lead > 0 ? 'good' : lead < 0 ? 'bad' : 'muted'}>{lead > 0 ? `+${lead}` : lead} pts</span>}
       </button>

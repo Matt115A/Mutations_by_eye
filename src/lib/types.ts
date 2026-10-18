@@ -28,15 +28,15 @@ export interface Config {
 
 export const PRESETS: Record<string, { title: string; description: string; phases: PhaseSpec[] }> = {
   session1: {
-    title: 'Session 1 — learn, then new proteins',
+    title: 'Session 1: learn, then new proteins',
     description: 'Learn on six proteins with feedback, then predict mutations in two proteins you have never seen, then in two proteins with very few known relatives.',
     phases: [
       { name: 'learn', label: 'Learning (6 proteins)', trials: 144, group: 'learn', feedback: 'reveal',
-        intro: 'Part 1 of 3 — learning.\nEach trial is one mutation in a real protein. Decide: is it damaging (worse than most mutations in this experiment), or tolerated?\nAfter each answer you\'ll see what the experiment measured. Press Space to move on.' },
+        intro: 'Part 1 of 3: learning.\nEach trial is one mutation in a real protein. Decide: is it damaging (worse than most mutations in this experiment), or tolerated?\nAfter each answer you\'ll see what the experiment measured. Press Space to move on.' },
       { name: 'new', label: 'New proteins', trials: 48, group: 'new', feedback: 'reveal',
-        intro: 'Part 2 of 3 — two proteins you haven\'t seen.\nSame task. Use what you learned.' },
+        intro: 'Part 2 of 3: two proteins you haven\'t seen.\nSame task. Use what you learned.' },
       { name: 'shallow', label: 'Proteins with few relatives', trials: 48, group: 'shallow', feedback: 'reveal',
-        intro: 'Part 3 of 3 — two more proteins.\nSame task.' },
+        intro: 'Part 3 of 3: two more proteins.\nSame task.' },
     ],
   },
 };

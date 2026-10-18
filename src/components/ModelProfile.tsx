@@ -8,7 +8,7 @@ const KIND_LABEL: Record<string, string> = { simple: 'Simple rules', classic: 'C
 const KIND_PHRASE: Record<string, string> = { simple: 'simple rules', classic: 'classic MSA models', msa: 'deep MSA models', plm: 'language models', structure: 'structure-aware models' };
 const FONT = "Inter, -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif";
 const short = (l: string) => l.replace(' (sees what you see)', '').replace(' (MSA)', '');
-const pct = (v: number | null | undefined) => (v == null ? '—' : `${Math.round(v * 100)}%`);
+const pct = (v: number | null | undefined) => (v == null ? '–' : `${Math.round(v * 100)}%`);
 
 export function ModelProfile({ session, data, byId }: { session: Session; data: Dataset; byId: Map<number, Variant> }) {
   const models = data.models;
@@ -30,7 +30,7 @@ export function ModelProfile({ session, data, byId }: { session: Session; data: 
       </div>
       <div className="grid2">
         <Card title="Your orbit: who thinks like you" svgRef={refs.map} exportName="model_orbit"
-          sub="You are the star. Each model sits on its own spoke — the closer to you, the more its answers match yours on exactly the mutations you saw (Cohen's κ, agreement beyond chance). Dashed rings mark κ steps.">
+          sub="You are the star. Each model sits on its own spoke: the closer to you, the more its answers match yours on exactly the mutations you saw (Cohen's κ, agreement beyond chance). Dashed rings mark κ steps.">
           <Legend items={[{ name: 'You', color: C.yellow, square: true }, ...Object.entries(KIND_LABEL).map(([k, l]) => ({ name: l, color: KIND_COLOR[k], square: true }))]} />
           <OrbitPlot prof={prof} svgRef={refs.map} />
         </Card>
@@ -44,7 +44,7 @@ export function ModelProfile({ session, data, byId }: { session: Session; data: 
           <Bars svgRef={refs.fam} label="Average κ with your answers" domain={[Math.min(0, ...fams.map((f) => f.kappa)), Math.max(0.3, ...fams.map((f) => f.kappa)) * 1.15]} format={(v) => v.toFixed(2)} height={250}
             bars={fams.map((f) => ({ label: KIND_LABEL[f.k], value: Math.max(0, f.kappa), color: KIND_COLOR[f.k] }))} />
         </Card>
-        <Card title="Resemblance in numbers" sub="Shared mistakes = of the mutations you got wrong, the share where this model made the same wrong call — the strongest sign of thinking alike.">
+        <Card title="Resemblance in numbers" sub="Shared mistakes = of the mutations you got wrong, the share where this model made the same wrong call, the strongest sign of thinking alike.">
           <table className="data" style={{ fontSize: 13 }}>
             <thead><tr><th>Model</th><th className="num">Same answer</th><th className="num">κ</th><th className="num">Shared mistakes</th><th className="num">Its accuracy</th></tr></thead>
             <tbody>{prof.map((p) => <tr key={p.name}><td><span style={{ color: KIND_COLOR[p.kind] }}>●</span> {short(p.label)}</td><td className="num">{pct(p.agree)}</td><td className="num"><b>{p.kappa.toFixed(2)}</b></td><td className="num">{pct(p.sharedErrors)}</td><td className="num muted">{pct(p.accuracy)}</td></tr>)}</tbody>

@@ -100,7 +100,7 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
   return (
     <div className="exp-p">
       <div className="hud-p">
-        <span><span className="muted">Part</span> <b>{phase?.label ?? '—'}</b></span>
+        <span><span className="muted">Part</span> <b>{phase?.label ?? '–'}</b></span>
         <span><span className="muted">Trial</span> <b>{core.trials.length + (state === 'feedback' ? 0 : 1)}</b></span>
         <span><span className="muted">Time</span> <b>{fmtClock(clock)}</b></span>
         {touch ? <button className="btn btn-sm hud-pause" {...noFocus} onClick={togglePause}>Pause</button> : <span className="muted hud-esc">Esc to pause or stop · progress is saved</span>}
@@ -142,7 +142,7 @@ function Feedback({ t, v, touch, onNext }: { t: TrialRecord; v: Variant; touch: 
   const cutoff = v.protein.frac_del;
   return (
     <div className={`feedback ${t.correct ? 'ok' : 'no'}`}>
-      <div className="fb-verdict">{t.correct ? '✓ Correct' : '✗ Wrong'} <span className="muted">— you said {said === 0 ? 'damaging' : 'tolerated'}</span></div>
+      <div className="fb-verdict">{t.correct ? '✓ Correct' : '✗ Wrong'} <span className="muted">· you said {said === 0 ? 'damaging' : 'tolerated'}</span></div>
       <div className="fb-measured">
         Measured: <b className={v.label === 0 ? 'bad' : 'good'}>{v.label === 0 ? 'damaging' : 'tolerated'}</b>
         <span className="muted"> · better than {Math.round(v.pct * 100)}% of mutations in this experiment · line = {v.protein.cutoff === 'median' ? 'the median mutation' : 'threshold set by the authors'}</span>

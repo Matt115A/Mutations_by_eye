@@ -4,7 +4,7 @@ import { ModelProfile } from '../components/ModelProfile';
 import { acc, byCue, cueWeights, modelAccuracy, phaseStats, rolling, streamLearners, subsets } from '../lib/analysis';
 import type { Dataset, Session, Variant } from '../lib/types';
 
-const pct = (v: number | null | undefined) => (v == null ? '—' : `${Math.round(v * 100)}%`);
+const pct = (v: number | null | undefined) => (v == null ? '–' : `${Math.round(v * 100)}%`);
 const KIND_COLOR: Record<string, string> = { simple: '#9cc3e6', classic: '#199e70', msa: '#c98500', plm: '#3987e5', structure: '#e87ba4' };
 const KIND_LABEL: Record<string, string> = { simple: 'simple', classic: 'classic MSA', msa: 'deep MSA', plm: 'language model', structure: 'structure-aware' };
 const W = 30;
@@ -36,7 +36,7 @@ export function Analysis({ session, data, byId, priorIds }: { session: Session; 
       <Card title="By part" sub="Accuracy (95% interval). Trials are balanced, half damaging and half tolerated, so 50% is chance. 'Caught damaging' = share of truly damaging mutations you called damaging.">
         <table className="data">
           <thead><tr><th>Part</th><th className="num">n</th><th className="num">Accuracy</th><th className="num">95% CI</th><th className="num">Caught damaging</th><th className="num">Caught tolerated</th><th className="num">You said damaging</th><th className="num">Median time</th></tr></thead>
-          <tbody>{r.phases.map((p) => <tr key={p.name}><td><b>{p.label}</b></td><td className="num">{p.n}</td><td className="num"><b>{pct(p.acc)}</b></td><td className="num muted">{pct(p.ci[0])}–{pct(p.ci[1])}</td><td className="num">{pct(p.hitDel)}</td><td className="num">{pct(p.hitFit)}</td><td className="num">{pct(p.saidDel)}</td><td className="num">{p.rt ? `${(p.rt / 1000).toFixed(1)} s` : '—'}</td></tr>)}</tbody>
+          <tbody>{r.phases.map((p) => <tr key={p.name}><td><b>{p.label}</b></td><td className="num">{p.n}</td><td className="num"><b>{pct(p.acc)}</b></td><td className="num muted">{pct(p.ci[0])}–{pct(p.ci[1])}</td><td className="num">{pct(p.hitDel)}</td><td className="num">{pct(p.hitFit)}</td><td className="num">{pct(p.saidDel)}</td><td className="num">{p.rt ? `${(p.rt / 1000).toFixed(1)} s` : '–'}</td></tr>)}</tbody>
         </table>
       </Card>
 

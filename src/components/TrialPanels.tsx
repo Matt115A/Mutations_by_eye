@@ -12,7 +12,7 @@ export function MutationHeader({ v }: { v: Variant }) {
     <div className="mut-header">
       <div>
         <div className="mut-protein">{p.name} <span className="muted">· {p.organism}</span></div>
-        <div className="mut-assay">Measured: <b>{SELECTION_TEXT[p.selection] ?? p.selection}</b> <span className="muted">— {p.assay}</span></div>
+        <div className="mut-assay">Measured: <b>{SELECTION_TEXT[p.selection] ?? p.selection}</b> <span className="muted">· {p.assay}</span></div>
       </div>
       <div className="mut-name">
         <span style={{ color: CLASS_COLOR[w.cls] }}>{v.wt}</span><span className="mut-pos">{v.pos}</span><span style={{ color: CLASS_COLOR[m.cls] }}>{v.mt}</span>

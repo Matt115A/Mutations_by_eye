@@ -1,15 +1,17 @@
 import { useRef, useState } from 'react';
 import { loadLocal } from '../lib/export';
+import { LevelToggle, useLevel } from '../lib/level';
 import { clearAllAttempts, type HistoryEntry, loadArchived, removeFromHistory } from '../lib/history';
 import { type Config, type Dataset, PRESETS, type Session } from '../lib/types';
 
-const pct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`);
+const pct = (v: number | null) => (v == null ? '–' : `${Math.round(v * 100)}%`);
 const GROUP_TEXT: Record<string, string> = { learn: 'learning', new: 'new proteins', shallow: 'few relatives' };
 
 export function Setup({ data, initial, history, debug, onStart, onSimulate, onOpenSession, onHistoryChange }: {
   data: Dataset; initial: Config; history: HistoryEntry[]; debug: boolean; onStart: (c: Config) => void; onSimulate: (c: Config) => void; onOpenSession: (s: Session) => void; onHistoryChange: (h: HistoryEntry[]) => void;
 }) {
   const [c, setC] = useState<Config>(initial);
+  const [level, setLevel] = useLevel();
   const [keysText, setKeysText] = useState(initial.keys.join(''));
   const fileRef = useRef<HTMLInputElement>(null);
   const [last, setLast] = useState(() => loadLocal());
@@ -21,18 +23,30 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
   return (
     <div className="screen">
       <div className="setup" style={{ width: 'min(960px, 100%)' }}>
-        <a className="bioai-link" href="https://matt115a.github.io/BioAI_by_eye/">PART OF BIOAI BY EYE →</a>
+        <div className="setup-top"><a className="bioai-link" href="https://matt115a.github.io/BioAI_by_eye/">PART OF BIOAI BY EYE →</a><LevelToggle level={level} onChange={setLevel} /></div>
         <h1 className="title">Mutation effects by eye</h1>
-        <p className="subtitle">Real protein experiments (ProteinGym deep mutational scans) · learn to tell which mutations damage a protein.</p>
+        <p className="subtitle">{level === 'learner' ? 'Real protein experiments · learn to tell which mutations break a protein, then race the AI.'
+          : 'ProteinGym deep mutational scans · damaging or tolerated calls on single substitutions, scored against 11 zero-shot predictors and 4 baselines.'}</p>
         <div className="card" style={{ marginBottom: 18 }}>
           <h3 className="card-title">What is this?</h3>
-          <p className="card-sub" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
-            Each trial is one amino-acid change in a real protein, measured in a lab experiment. You see three things at a glance: the <b>chemistry</b> of the swap,
-            how often <b>evolution</b> tolerates it (the alignment of related proteins), and <b>where it sits in the 3D structure</b>. Decide whether it is
-            <b> damaging</b> or <b>tolerated</b>, and learn from the feedback. The line between the two is drawn per experiment: for most proteins it is the
-            median mutation (so half of all mutations count as damaging), for a few it is a threshold chosen by the scientists who ran it — see the table. At the end you're compared, on exactly the same mutations, with simple
-            rules and with state-of-the-art AI models (ESM, EVE, SaProt, VenusREM…). A live leaderboard lets you race a model of your choice as you go. Works with a keyboard or by tapping on a phone. Results stay in this browser.
-          </p>
+          {level === 'learner' ? (
+            <p className="card-sub" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
+              Each trial is one amino-acid change in a real protein, measured in a lab experiment. You get three kinds of clue: the <b>chemistry</b> of the swap,
+              how often <b>evolution</b> allows it (by comparing related proteins), and <b>where it sits in the protein's 3D shape</b>. Decide whether it is
+              <b> damaging</b> or <b>tolerated</b>, and learn from the feedback. AI can predict this without running an experiment, but even the best AI can make mistakes!
+              At the end you're compared, on exactly the same mutations, with simple rules and with state-of-the-art AI models. A live leaderboard lets you race
+              a model as you go. Works with a keyboard or by tapping on a phone. Results stay in this browser.
+            </p>
+          ) : (
+            <p className="card-sub" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
+              Single substitutions from 10 ProteinGym v1.3 DMS assays: 6 for learning, 2 held-out proteins and 2 with shallow MSAs. Each trial shows the
+              substitution's physicochemistry and BLOSUM62 score, reweighted MSA column frequencies (80% identity) with representative homologues, and the site on the
+              AlphaFold2 model (relative solvent accessibility, packing, pLDDT). Labels are ProteinGym's DMS_score_bin: the median for most assays, author-defined
+              for a few (see the table). Feedback reveals the measured score. Your calls are compared on identical variants with single-cue rules (BLOSUM62, MSA
+              conservation, mutant frequency in the MSA), a gradient-boosted model trained on your cues, and zero-shot scores from Site-independent, EVmutation, GEMME,
+              EVE, TranceptEVE L, ESM-1v, ESM2 650M, SaProt, ProSST, S3F-MSA and VenusREM. Rule and zero-shot scores are binarised per assay at the true deleterious fraction.
+            </p>
+          )}
         </div>
         <Attempts history={history} last={last} total={data.variants.length} onOpen={onOpenSession}
           onChange={(h) => { onHistoryChange(h); setLast(loadLocal()); }} />
@@ -47,7 +61,7 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
           <div className="card-head"><div><h3 className="card-title">{PRESETS[c.protocol].title}</h3><p className="card-sub">{PRESETS[c.protocol].description}</p></div></div>
           <table className="data"><thead><tr><th>Part</th><th className="num">Trials</th><th>Feedback</th></tr></thead>
             <tbody>{c.phases.map((p, i) => <tr key={p.name}><td>{i + 1}. {p.label}</td><td className="num">{debug ? <input type="number" style={{ width: 70 }} value={p.trials} onChange={(e) => setC({ ...c, phases: c.phases.map((q, j) => (j === i ? { ...q, trials: Number(e.target.value) } : q)) })} /> : p.trials}</td><td className="muted">{p.feedback === 'reveal' ? 'right / wrong + measured effect' : p.feedback}</td></tr>)}</tbody></table>
-          <p className="note" style={{ marginTop: 8 }}>{total} mutations · self-paced (roughly 30–50 min). {history.length ? `You've done ${history.reduce((a, e) => a + e.n_trials, 0)} before — those won't be repeated.` : ''}</p>
+          <p className="note" style={{ marginTop: 8 }}>{total} mutations · self-paced (roughly 30–50 min). {history.length ? `You've done ${history.reduce((a, e) => a + e.n_trials, 0)} before; those won't be repeated.` : ''}</p>
         </div>
         <div className="setup-grid keys-field">
           <div className="field"><label>Keys: damaging · tolerated</label><input type="text" value={keysText} maxLength={2} onChange={(e) => setKeysText(e.target.value.toUpperCase())} /></div>
@@ -82,7 +96,7 @@ function Attempts({ history, last, total, onOpen, onChange }: { history: History
   const [confirm, setConfirm] = useState<string | null>(null);   // session id, or 'all'
   const [cleared, setCleared] = useState(false);
   const seen = new Set(history.flatMap((h) => h.window_ids)).size;
-  if (!history.length) return cleared ? <p className="note attempts-cleared">✓ Cleared. Every mutation is available again — press Start for a fresh run.</p> : null;
+  if (!history.length) return cleared ? <p className="note attempts-cleared">✓ Cleared. Every mutation is available again. Press Start for a fresh run.</p> : null;
   const sessionFor = (id: string) => loadArchived(id) ?? (last?.meta.session_id === id ? last : null);
   return (
     <div className="card attempts" style={{ marginBottom: 18 }}>
