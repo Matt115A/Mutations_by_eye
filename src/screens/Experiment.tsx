@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LiveBoard } from '../components/LiveBoard';
+import { Tour } from '../components/Tour';
 import { ChemistryPanel, MsaPanel, MutationHeader, StructurePanel } from '../components/TrialPanels';
 import { saveLocal } from '../lib/export';
 import type { SessionCore } from '../lib/session';
 import type { Label, ModelInfo, PhaseSpec, Session, TrialRecord, Variant } from '../lib/types';
 
-type State = 'intro' | 'trial' | 'feedback' | 'paused';
+type State = 'intro' | 'trial' | 'feedback' | 'paused' | 'tour';
+/** The clock stops while paused or touring the screen. */
+const stopped = (s: State) => s === 'paused' || s === 'tour';
+const TOUR_KEY = 'prot.tourSeen';
+const tourSeen = () => { try { return localStorage.getItem(TOUR_KEY) === '1'; } catch { return false; } };
 const isTouch = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
 const isNarrow = () => typeof innerWidth !== 'undefined' && innerWidth <= 760;
 /** Buttons must never keep focus: Space would then re-click them on the next trial. */
@@ -28,13 +33,13 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
   useEffect(() => { const h = () => setNarrow(isNarrow()); addEventListener('resize', h); return () => removeEventListener('resize', h); }, []);
 
   const stateRef = useRef(state); stateRef.current = state;
-  const activeMs = () => active.current.accum + (stateRef.current === 'paused' ? 0 : performance.now() - active.current.since);
+  const activeMs = () => active.current.accum + (stopped(stateRef.current) ? 0 : performance.now() - active.current.since);
 
   const end = useCallback((reason: string) => {
     if (ended.current) return;
     ended.current = true;
     const a = active.current;
-    const s = core.finish(reason, a.accum + (state === 'paused' ? 0 : performance.now() - a.since), a.pausedAccum + (state === 'paused' ? performance.now() - a.pauseSince : 0));
+    const s = core.finish(reason, a.accum + (stopped(state) ? 0 : performance.now() - a.since), a.pausedAccum + (stopped(state) ? performance.now() - a.pauseSince : 0));
     saveLocal(s); onEnd(s);
   }, [core, onEnd, state]);
 
@@ -60,10 +65,16 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
     else setState('trial');
   }, [core, phase, end, narrow]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const stopClock = (into: State, resumeTo: State) => { active.current.accum += performance.now() - active.current.since; active.current.pauseSince = performance.now(); prevState.current = resumeTo; setState(into); };
+  const startClock = () => { active.current.pausedAccum += performance.now() - active.current.pauseSince; active.current.since = performance.now(); setState(prevState.current); };
   const togglePause = useCallback(() => {
-    if (state === 'paused') { active.current.pausedAccum += performance.now() - active.current.pauseSince; active.current.since = performance.now(); setState(prevState.current); }
-    else { active.current.accum += performance.now() - active.current.since; active.current.pauseSince = performance.now(); prevState.current = state; setState('paused'); }
-  }, [state]);
+    if (state === 'paused') startClock();
+    else if (state !== 'tour') stopClock('paused', state);
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** The tour stops the clock; afterwards the trial restarts its response timer, so touring never counts against you. */
+  const openTour = () => { if (!stopped(state)) stopClock('tour', state === 'intro' ? 'trial' : state); };
+  const closeTour = useCallback(() => { try { localStorage.setItem(TOUR_KEY, '1'); } catch { /* not essential */ } startClock(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [firstTime] = useState(() => !tourSeen());
 
   /** One answer, from a key press or a tap/click. `stamp` is the event's timeStamp (same clock as performance.now()). */
   const respond = useCallback((label: Label, pressedKey: string, stamp: number) => {
@@ -82,6 +93,7 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (state === 'tour') return;   // the tour handles its own keys
       if (e.key === 'Escape') { e.preventDefault(); togglePause(); return; }
       if (state === 'intro' && e.code === 'Space') { e.preventDefault(); setState('trial'); return; }
       if (state === 'feedback' && (e.code === 'Space' || e.key === 'Enter')) { e.preventDefault(); advance(); return; }
@@ -104,7 +116,8 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
         <span><span className="muted">Trial</span> <b>{core.trials.length + (state === 'feedback' ? 0 : 1)}</b></span>
         <span><span className="muted">Time</span> <b>{fmtClock(clock)}</b></span>
         {touch ? <button className="btn btn-sm hud-pause" {...noFocus} onClick={togglePause}>Pause</button> : <span className="muted hud-esc">Esc to pause or stop · progress is saved</span>}
-        <LiveBoard seen={seen.current} correct={core.trials.map((t) => t.correct)} models={models} window={20} />
+        <button className="btn btn-sm hud-tour" data-tour="tour-button" {...noFocus} onClick={openTour} title="A guided tour of everything on this screen">Tour</button>
+        <span data-tour="board" className="hud-board"><LiveBoard seen={seen.current} correct={core.trials.map((t) => t.correct)} models={models} window={20} /></span>
       </div>
       {v && (
         <>
@@ -114,7 +127,7 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
             <MsaPanel v={v} aa={aa} />
             <StructurePanel v={v} height={narrow ? 300 : undefined} />
           </div>
-          <div className="answer-bar">
+          <div className="answer-bar" data-tour="answer">
             {state === 'feedback' && last ? <Feedback t={last} v={v} touch={touch} onNext={advance} /> : (
               <div className="answer-keys">
                 <button className="answer-key del" {...noFocus} onClick={(e) => respond(0, 'TAP', e.timeStamp)}>{!touch && <kbd>{keys[0]}</kbd>} Damaging</button>
@@ -126,8 +139,12 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
         </>
       )}
       {state === 'intro' && phase && (
-        <div className="overlay"><div className="intro">{phase.intro.split('\n').map((l, i) => (i ? <p key={i}>{l}</p> : <h2 key={i}>{l}</h2>))}<p className="hint">{touch ? null : <span className="pulse">Press <kbd>Space</kbd> or </span>}<button className="btn btn-primary" {...noFocus} onClick={() => setState('trial')}>Begin</button></p></div></div>
+        <div className="overlay"><div className="intro">{phase.intro.split('\n').map((l, i) => (i ? <p key={i}>{l}</p> : <h2 key={i}>{l}</h2>))}{core.trials.length === 0 && (
+          <div className="tour-offer"><b>{firstTime ? 'New here?' : 'Need a reminder?'}</b> Take a one-minute tour of what each part of the screen shows. You can skip it at any point, and bring it back any time with the <b>Tour</b> button at the top.
+            <div><button className={`btn ${firstTime ? 'btn-primary' : ''}`} {...noFocus} onClick={openTour}>Take the tour</button></div></div>
+        )}<p className="hint">{touch ? null : <span className="pulse">Press <kbd>Space</kbd> or </span>}<button className={`btn ${core.trials.length === 0 && firstTime ? '' : 'btn-primary'}`} {...noFocus} onClick={() => setState('trial')}>{core.trials.length === 0 && firstTime ? 'Skip the tour and begin' : 'Begin'}</button></p></div></div>
       )}
+      {state === 'tour' && <Tour onClose={closeTour} />}
       {state === 'paused' && (
         <div className="overlay"><div className="intro"><h2>Paused</h2><p>The timer is stopped.</p>
           <p className="save-note"><b>Need to go?</b> Stop &amp; save keeps your {core.trials.length} answer{core.trials.length === 1 ? '' : 's'} in this browser and shows your results so far. They stay under <b>Your attempts</b>, and next time you start a new run with mutations you haven't seen.</p>

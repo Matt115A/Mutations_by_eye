@@ -1,0 +1,28 @@
+/** Plain-language explanations for every piece of information on the trial screen (shown on hover or tap, and in the tour). */
+export const HELP = {
+  mutation: { title: 'The mutation', text: 'Written as original letter, position, new letter. For example A123V means the amino acid at position 123 was alanine (A) and has been changed to valine (V).' },
+  measured: { title: 'What was measured', text: 'Scientists made thousands of single mutations in this protein and measured one thing for each, such as how well cells grow or how active the enzyme is. That measurement decides whether a mutation counts as damaging or tolerated.' },
+  chemistry: { title: 'Chemistry', text: 'Compares the original amino acid (wild type) with its replacement (mutant). Each amino acid has a shape and chemistry suited to its spot in the protein, so bigger changes are riskier.' },
+  tiles: { title: 'The two amino acids', text: 'All amino acids share the same backbone; what makes each one different is its side chain (the R group), drawn here hanging from the backbone carbon, Cα. The coloured label groups amino acids with similar chemistry.' },
+  hydrophobicity: { title: 'Hydrophobicity', text: 'How strongly the side chain avoids water (Kyte-Doolittle scale). Positive means oily and water-avoiding, negative means water-loving. Oily amino acids usually hide inside the protein.' },
+  size: { title: 'Size', text: 'The volume of the amino acid, in cubic ångströms (Å³). A much bigger side chain may not fit in the space; a much smaller one can leave a hole.' },
+  charge: { title: 'Charge', text: 'Whether the side chain carries a positive or negative electric charge. Adding, removing or flipping a charge can break attractions that hold the protein together or let it bind its partners.' },
+  blosum: { title: 'BLOSUM62', text: 'A score for how often this exact swap is seen between related proteins across nature. Positive means a common swap that evolution usually accepts; negative means a rare one.' },
+  flags: { title: 'Special cases', text: 'Some amino acids play unusual roles: proline is rigid and kinks the chain, glycine is very flexible, and cysteines can link to each other. Changes involving them are worth a closer look.' },
+  msa: { title: 'Evolution (MSA)', text: 'MSA stands for multiple sequence alignment: versions of this protein from many different species, lined up so that matching positions sit in the same column. Positions that matter tend to stay the same through evolution.' },
+  conservation: { title: 'Conservation', text: 'How unchanging this position is across the relatives, from 0% (anything goes) to 100% (always the same amino acid). Highly conserved positions are usually important.' },
+  wtFreq: { title: 'Original amino acid', text: 'The share of related proteins that have the original (wild type) amino acid at this position.' },
+  mtFreq: { title: 'New amino acid', text: 'The share of related proteins that already have the new amino acid here. If evolution already uses it, the change is more likely to be tolerated.' },
+  gaps: { title: 'Gaps', text: 'The share of relatives with nothing at this position (that part is missing in them). Many gaps suggest the position is less essential.' },
+  relatives: { title: 'Relatives', text: 'How many related sequences are in the alignment. More relatives make the evolution clues more reliable.' },
+  columnBars: { title: 'Amino acids at this position', text: 'One bar per amino acid; its height is how often relatives have that amino acid at this position (near-identical sequences are down-weighted so they do not count twice). Solid outline: the original amino acid. Dashed outline: the new one.' },
+  alignment: { title: 'The alignment', text: 'Each row is one protein: the top row is this protein, the rows below are relatives from other species, most to least similar. Each column is one position, and the highlighted column is the one being mutated. Colours show amino-acid groups, so a column of one colour keeps the same kind of chemistry.' },
+  structure: { title: 'Structure (AlphaFold)', text: "The protein's 3D shape, predicted by the AI model AlphaFold. The mutated amino acid is shown as yellow sticks, with its nearby neighbours in grey. Drag to rotate, scroll to zoom." },
+  exposure: { title: 'Surface exposure', text: 'How much of the amino acid is exposed to the surrounding water. Buried amino acids (low %) sit in the tightly packed core, where changes are more often damaging.' },
+  neighbours: { title: 'Packed neighbours', text: 'How many other amino acids sit within 10 Å of this one. A crowded spot leaves little room for a different shape.' },
+  plddt: { title: 'AlphaFold confidence', text: "AlphaFold's confidence in this part of the structure, from 0 to 100. Above 90 is very confident; below 50 the region is probably floppy." },
+  position: { title: 'Position in the protein', text: 'Where the mutation sits along the whole chain, from the first amino acid to the last.' },
+  board: { title: 'Live leaderboard', text: 'Your accuracy so far next to AI models scored on exactly the same mutations. Choose which model to race.' },
+  answer: { title: 'Your call', text: 'Decide whether the mutation is damaging or tolerated, with the keys or by tapping. After each answer you see what the experiment actually measured.' },
+} as const;
+export type HelpKey = keyof typeof HELP;
