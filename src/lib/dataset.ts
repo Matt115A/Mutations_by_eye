@@ -21,7 +21,11 @@ export function parseDataset(raw: RawDataset): Dataset {
 
 const pdbCache = new Map<string, Promise<string>>();
 export function loadStructure(key: string, base = `${import.meta.env.BASE_URL}data/structures/`): Promise<string> {
-  if (!pdbCache.has(key)) pdbCache.set(key, fetch(`${base}${key}.pdb`).then((r) => r.text()));
+  if (!pdbCache.has(key)) {
+    const p = fetch(`${base}${key}.pdb`).then((r) => { if (!r.ok) throw new Error(`structure ${key}: HTTP ${r.status}`); return r.text(); });
+    p.catch(() => pdbCache.delete(key));   // a failed (pre)fetch must not poison the cache: try again next time
+    pdbCache.set(key, p);
+  }
   return pdbCache.get(key)!;
 }
 

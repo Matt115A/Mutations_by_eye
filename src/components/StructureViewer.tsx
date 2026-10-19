@@ -11,6 +11,9 @@ export function StructureViewer({ structureKey, pos, label, height = 360, onRead
   const viewer = useRef<ReturnType<typeof $3Dmol.createViewer> | null>(null);
   const loaded = useRef<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const home = useRef<unknown>(null);   // the starting camera for this residue, for Reset view
+  const ready = useRef(onReady); ready.current = onReady;
 
   useEffect(() => {
     if (!div.current || viewer.current) return;
@@ -23,6 +26,7 @@ export function StructureViewer({ structureKey, pos, label, height = 360, onRead
     } catch (e) {
       viewer.current = null;
       setErr(`3D view unavailable in this browser (${e instanceof Error ? e.message : e}). Everything else works; the burial and packing numbers below still describe the structure.`);
+      setLoading(false);
     }
     return () => { try { viewer.current?.clear(); } catch { /* ignore */ } viewer.current = null; loaded.current = null; };
   }, []);
@@ -32,8 +36,9 @@ export function StructureViewer({ structureKey, pos, label, height = 360, onRead
     (async () => {
       try {
         const v = viewer.current;
-        if (!v) return;
+        if (!v) { ready.current?.(); return; }
         if (loaded.current !== structureKey) {
+          v.removeAllModels(); v.removeAllLabels(); v.render(); setLoading(true);   // never leave the previous protein on screen
           const pdb = await loadStructure(structureKey);
           if (cancelled) return;
           v.removeAllModels();
@@ -47,9 +52,11 @@ export function StructureViewer({ structureKey, pos, label, height = 360, onRead
         v.setStyle({ resi: pos }, { cartoon: { color: '#f2c230' }, stick: { colorscheme: 'yellowCarbon', radius: 0.35 }, sphere: { colorscheme: 'yellowCarbon', scale: 0.3 } });
         v.addLabel(label, { fontSize: 13, fontColor: '#111', backgroundColor: '#f2c230', backgroundOpacity: 0.9, borderThickness: 0, inFront: true, alignment: 'bottomCenter' } as never, { resi: pos, atom: 'CA' });
         v.zoomTo({ byres: true, within: { distance: 12, sel: { resi: pos } } } as never);   // frame the residue and its ~12 Å surroundings
+        home.current = v.getView();
         v.render();
-        onReady?.();
-      } catch (e) { setErr(String(e)); }
+        setLoading(false);
+        ready.current?.();
+      } catch (e) { if (!cancelled) { setErr(`Couldn't load this structure (${e instanceof Error ? e.message : e}). Check your connection; the burial and packing numbers below still describe it.`); setLoading(false); ready.current?.(); } }
     })();
     return () => { cancelled = true; };
   }, [structureKey, pos, label]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -57,7 +64,10 @@ export function StructureViewer({ structureKey, pos, label, height = 360, onRead
   return (
     <div className="structure-wrap">
       <div ref={div} style={{ width: '100%', height, position: 'relative' }} />
+      {loading && !err && <div className="structure-loading"><span className="spinner" />Loading the 3D structure…</div>}
       {err && <div className="structure-error">{err}</div>}
+      {!loading && !err && <button className="btn btn-sm structure-reset" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} title="Back to the starting view"
+        onClick={() => { const v = viewer.current; if (v && home.current) { v.setView(home.current as never); v.render(); } }}>Reset view</button>}
       <div className="structure-hint">drag to rotate · scroll to zoom</div>
     </div>
   );

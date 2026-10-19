@@ -71,6 +71,17 @@ export class SessionCore {
     return out;
   }
 
+  /** Proteins the next few trials will use (from the queue), so their structures can be fetched ahead of time. */
+  upcomingProteins(n: number): string[] {
+    const out: string[] = [];
+    for (const w of this.queue) {
+      const key = this.pools.get(`${w.protein}|${w.label}`)?.[0]?.protein.key;
+      if (key && !out.includes(key)) out.push(key);
+      if (out.length >= n) break;
+    }
+    return out;
+  }
+
   nextStimulus(): { v: Variant; block: number } | null {
     if (!this.phase) return null;
     for (let tries = 0; tries < 50; tries++) {

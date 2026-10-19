@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { LiveBoard } from '../components/LiveBoard';
 import { Tour } from '../components/Tour';
 import { ChemistryPanel, MsaPanel, MutationHeader, StructurePanel } from '../components/TrialPanels';
+import { loadStructure } from '../lib/dataset';
 import { saveLocal } from '../lib/export';
 import type { SessionCore } from '../lib/session';
 import type { Label, ModelInfo, PhaseSpec, Session, TrialRecord, Variant } from '../lib/types';
@@ -28,6 +29,9 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
   const prevState = useRef<State>('trial');
   const ended = useRef(false);
   const seen = useRef<Variant[]>([]);   // variants answered so far, parallel to core.trials (for the live leaderboard)
+  /** The variant whose 3D structure has finished drawing. The response clock waits for it. */
+  const [readyFor, setReadyFor] = useState<number | null>(null);
+  const waiting = !!stim && readyFor !== stim.v.id;
   const [touch] = useState(isTouch);
   const [narrow, setNarrow] = useState(isNarrow);
   useEffect(() => { const h = () => setNarrow(isNarrow()); addEventListener('resize', h); return () => removeEventListener('resize', h); }, []);
@@ -47,9 +51,16 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
   useEffect(() => {
     if (state !== 'trial' || !stim) return;
     onset.current = null;
+    if (waiting) return;   // the clock starts when the structure is on screen
     const id = requestAnimationFrame(() => (onset.current = { perf: performance.now(), wall: new Date(), elapsed: activeMs() }));
     return () => cancelAnimationFrame(id);
-  }, [state, stim]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state, stim, waiting]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // once this structure is up, fetch the next few proteins' structures in the background so later trials appear at once
+  useEffect(() => {
+    if (waiting) return;
+    for (const key of core.upcomingProteins(3)) loadStructure(key).catch(() => { /* retried when needed */ });
+  }, [waiting, core, stim]);
 
   useEffect(() => { const id = setInterval(() => setClock(activeMs()), 500); return () => clearInterval(id); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -125,13 +136,13 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
           <div className="panels">
             <ChemistryPanel v={v} />
             <MsaPanel v={v} aa={aa} />
-            <StructurePanel v={v} height={narrow ? 300 : undefined} />
+            <StructurePanel v={v} height={narrow ? 300 : undefined} onReady={() => setReadyFor(v.id)} />
           </div>
           <div className="answer-bar" data-tour="answer">
             {state === 'feedback' && last ? <Feedback t={last} v={v} touch={touch} onNext={advance} /> : (
               <div className="answer-keys">
                 <button className="answer-key del" {...noFocus} onClick={(e) => respond(0, 'TAP', e.timeStamp)}>{!touch && <kbd>{keys[0]}</kbd>} Damaging</button>
-                <div className="answer-q muted">Damaging or tolerated?</div>
+                <div className="answer-q muted">{waiting ? <><span className="spinner" /> Loading the 3D structure… the clock starts when it appears</> : 'Damaging or tolerated?'}</div>
                 <button className="answer-key fit" {...noFocus} onClick={(e) => respond(1, 'TAP', e.timeStamp)}>{!touch && <kbd>{keys[1]}</kbd>} Tolerated</button>
               </div>
             )}
