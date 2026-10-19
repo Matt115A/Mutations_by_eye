@@ -66,8 +66,8 @@ export function StructureViewer({ structureKey, pos, label, height = 360, onRead
       <div ref={div} style={{ width: '100%', height, position: 'relative' }} />
       {loading && !err && <div className="structure-loading"><span className="spinner" />Loading the 3D structure…</div>}
       {err && <div className="structure-error">{err}</div>}
-      {!loading && !err && <button className="btn btn-sm structure-reset" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} title="Back to the starting view"
-        onClick={() => { const v = viewer.current; if (v && home.current) { v.setView(home.current as never); v.render(); } }}>Reset view</button>}
+      {!loading && !err && <button className="btn btn-sm structure-reset" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} title="Back to the starting view" aria-label="Reset view"
+        onClick={() => { const v = viewer.current; if (v && home.current) { v.setView(home.current as never); v.render(); } }}>↺ Reset view</button>}
       <div className="structure-hint">drag to rotate · scroll to zoom</div>
     </div>
   );
