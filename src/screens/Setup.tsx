@@ -23,7 +23,7 @@ export function Setup({ data, initial, history, debug, onStart, onSimulate, onOp
         <h1 className="title">Mutation effects by eye</h1>
         <p className="subtitle">{level === 'learner' ? 'Learn to tell which mutations break a protein, while racing the AI.'
           : 'ProteinGym deep mutational scans; are single substitutions in proteins damaging or tolerated? Scored against zero-shot predictors and simple baselines.'}</p>
-        <button className="btn btn-primary" disabled={!valid} onClick={() => onStart(cfg)} style={{ padding: '12px 34px', fontSize: 16, margin: '2px 0 22px' }}>Start</button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '2px 0 22px' }}><button className="btn btn-primary" disabled={!valid} onClick={() => onStart(cfg)} style={{ padding: '12px 34px', fontSize: 16 }}>Start</button><a className="btn" href="https://substack.com/@mattpenner/note/p-218755987?r=4nmn57&utm_source=notes-share-action&utm_medium=web" target="_blank" rel="noreferrer" style={{ padding: '12px 22px', fontSize: 16, color: 'var(--text)', textDecoration: 'none' }}>Read the blog</a></div>
         <div className="card" style={{ marginBottom: 18 }}>
           <h3 className="card-title">What is this?</h3>
           {level === 'learner' ? (
