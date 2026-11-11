@@ -1,84 +1,69 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { loadLocal } from '../lib/export';
 import { LevelToggle, useLevel } from '../lib/level';
 import { clearAllAttempts, type HistoryEntry, loadArchived, removeFromHistory } from '../lib/history';
-import { type Config, type Dataset, PRESETS, type Session } from '../lib/types';
+import { type Config, type Dataset, type Session } from '../lib/types';
 
 const pct = (v: number | null) => (v == null ? '–' : `${Math.round(v * 100)}%`);
-const GROUP_TEXT: Record<string, string> = { learn: 'learning', new: 'new proteins', shallow: 'few relatives' };
 
 export function Setup({ data, initial, history, debug, onStart, onSimulate, onOpenSession, onHistoryChange }: {
   data: Dataset; initial: Config; history: HistoryEntry[]; debug: boolean; onStart: (c: Config) => void; onSimulate: (c: Config) => void; onOpenSession: (s: Session) => void; onHistoryChange: (h: HistoryEntry[]) => void;
 }) {
-  const [c, setC] = useState<Config>(initial);
+  const [c] = useState<Config>(initial);
   const [level, setLevel] = useLevel();
   const [keysText, setKeysText] = useState(initial.keys.join(''));
-  const fileRef = useRef<HTMLInputElement>(null);
   const [last, setLast] = useState(() => loadLocal());
   const keys = keysText.toUpperCase().replace(/\s+/g, '').split('');
   const cfg: Config = { ...c, keys: [keys[0] ?? 'F', keys[1] ?? 'J'] };
   const valid = keys.length === 2 && keys[0] !== keys[1];
-  const total = c.phases.reduce((a, p) => a + p.trials, 0);
-  const loadFile = async (f: File) => { try { const s = JSON.parse(await f.text()) as Session; if (!s.meta || !Array.isArray(s.trials)) throw 0; onOpenSession(s); } catch { alert('Not a session JSON.'); } };
   return (
     <div className="screen">
       <div className="setup" style={{ width: 'min(960px, 100%)' }}>
         <div className="setup-top"><a className="bioai-link" href="https://matt115a.github.io/BioAI_by_eye/">PART OF BIOAI BY EYE →</a><LevelToggle level={level} onChange={setLevel} /></div>
         <h1 className="title">Mutation effects by eye</h1>
-        <p className="subtitle">{level === 'learner' ? 'Real protein experiments · learn to tell which mutations break a protein, then race the AI.'
-          : 'ProteinGym deep mutational scans · damaging or tolerated calls on single substitutions, scored against 11 zero-shot predictors and 4 baselines.'}</p>
+        <p className="subtitle">{level === 'learner' ? 'Learn to tell which mutations break a protein, while racing the AI.'
+          : 'ProteinGym deep mutational scans; are single substitutions in proteins damaging or tolerated? Scored against zero-shot predictors and simple baselines.'}</p>
+        <button className="btn btn-primary" disabled={!valid} onClick={() => onStart(cfg)} style={{ padding: '12px 34px', fontSize: 16, margin: '2px 0 22px' }}>Start</button>
         <div className="card" style={{ marginBottom: 18 }}>
           <h3 className="card-title">What is this?</h3>
           {level === 'learner' ? (
             <p className="card-sub" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
-              Each trial is one amino-acid change in a real protein, measured in a lab experiment. You get three kinds of clue: the <b>chemistry</b> of the swap,
+              Each question is one amino-acid change in a real protein, measured in the lab. You get three kinds of clue: the <b>chemistry</b> of the swap,
               how often <b>evolution</b> allows it (by comparing related proteins), and <b>where it sits in the protein's 3D shape</b>. Decide whether it is
               <b> damaging</b> or <b>tolerated</b>, and learn from the feedback. AI can predict this without running an experiment, but even the best AI can make mistakes!
               At the end you're compared, on exactly the same mutations, with simple rules and with state-of-the-art AI models. A live leaderboard lets you race
-              a model as you go. Works with a keyboard or by tapping on a phone. Results stay in this browser.
+              a model as you go. Works with a keyboard or by tapping on a phone. You can reload the game in the same browser to pick up where you left off if you save your progress each time you stop.
             </p>
           ) : (
             <p className="card-sub" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
-              Single substitutions from 10 ProteinGym v1.3 DMS assays: 6 for learning, 2 held-out proteins and 2 with shallow MSAs. Each trial shows the
-              substitution's physicochemistry and BLOSUM62 score, reweighted MSA column frequencies (80% identity) with representative homologues, and the site on the
-              AlphaFold2 model (relative solvent accessibility, packing, pLDDT). Labels are ProteinGym's DMS_score_bin: the median for most assays, author-defined
-              for a few (see the table). Feedback reveals the measured score. Your calls are compared on identical variants with single-cue rules (BLOSUM62, MSA
-              conservation, mutant frequency in the MSA), a gradient-boosted model trained on your cues, and zero-shot scores from Site-independent, EVmutation, GEMME,
-              EVE, TranceptEVE L, ESM-1v, ESM2 650M, SaProt, ProSST, S3F-MSA and VenusREM. Rule and zero-shot scores are binarised per assay at the true deleterious fraction.
+              Single substitutions were pulled from 10 ProteinGym v1.3 deep mutational scanning (DMS) assays. Your job is to guess whether the mutation is
+              deleterious, or neutral/beneficial. I put neutral/beneficial as a single bin because often these assays are 'topped out' of their dynamic range at
+              approximately wild-type. Each question shows plenty of computed information on the substitution, for your gaming pleasure. Labels are ProteinGym's
+              DMS_score_bin: the median for most assays, author-defined for a few (see the table). Your answers are compared on identical variants with simple rules
+              (BLOSUM62, MSA conservation, mutant frequency in the MSA), a gradient-boosted model trained on the computed information you have seen up to each
+              point, and zero-shot scores from Site-independent, EVmutation, GEMME, EVE, TranceptEVE L, ESM-1v, ESM2 650M, SaProt, ProSST, S3F-MSA and VenusREM.
             </p>
           )}
         </div>
         <Attempts history={history} last={last} total={data.variants.length} onOpen={onOpenSession}
           onChange={(h) => { onHistoryChange(h); setLast(loadLocal()); }} />
         <div className="card" style={{ marginBottom: 18 }}>
-          <div className="card-head"><div><h3 className="card-title">Proteins</h3><p className="card-sub">{data.variants.length.toLocaleString()} measured mutations across {data.proteins.length} proteins.</p></div></div>
+          <div className="card-head"><div><h3 className="card-title">Proteins tested</h3><p className="card-sub">{data.variants.length.toLocaleString()} measured mutations across {data.proteins.length} proteins.</p></div></div>
           <div className="table-scroll"><table className="data">
-            <thead><tr><th>Protein</th><th>Organism</th><th>Measured</th><th>Damaging/tolerated line</th><th>Used for</th><th className="num">Relatives in MSA</th></tr></thead>
-            <tbody>{data.proteins.map((p) => <tr key={p.id}><td>{p.name}</td><td className="muted">{p.organism}</td><td className="muted">{p.selection}</td><td className="muted">{p.cutoff === 'median' ? 'median mutation' : `set by authors (${Math.round(p.frac_del * 100)}% damaging)`}</td><td>{GROUP_TEXT[p.group]}</td><td className="num">{p.nseq.toLocaleString()}</td></tr>)}</tbody>
+            <thead><tr><th>Protein</th><th>Organism</th><th>Measured</th><th>Damaging/tolerated line</th><th className="num">Relatives in MSA</th></tr></thead>
+            <tbody>{data.proteins.map((p) => <tr key={p.id}><td>{p.name}</td><td className="muted">{p.organism}</td><td className="muted">{p.selection}</td><td className="muted">{p.cutoff === 'median' ? 'median mutation' : `set by authors (${Math.round(p.frac_del * 100)}% damaging)`}</td><td className="num">{p.nseq.toLocaleString()}</td></tr>)}</tbody>
           </table></div>
         </div>
-        <div className="card" style={{ marginBottom: 18 }}>
-          <div className="card-head"><div><h3 className="card-title">{PRESETS[c.protocol].title}</h3><p className="card-sub">{PRESETS[c.protocol].description}</p></div></div>
-          <table className="data"><thead><tr><th>Part</th><th className="num">Trials</th><th>Feedback</th></tr></thead>
-            <tbody>{c.phases.map((p, i) => <tr key={p.name}><td>{i + 1}. {p.label}</td><td className="num">{debug ? <input type="number" style={{ width: 70 }} value={p.trials} onChange={(e) => setC({ ...c, phases: c.phases.map((q, j) => (j === i ? { ...q, trials: Number(e.target.value) } : q)) })} /> : p.trials}</td><td className="muted">{p.feedback === 'reveal' ? 'right / wrong + measured effect' : p.feedback}</td></tr>)}</tbody></table>
-          <p className="note" style={{ marginTop: 8 }}>{total} mutations · self-paced (roughly 30–50 min). {history.length ? `You've done ${history.reduce((a, e) => a + e.n_trials, 0)} before; those won't be repeated.` : ''}</p>
-        </div>
-        <div className="setup-grid keys-field">
+        <div className="setup-grid keys-field" style={{ gridTemplateColumns: 'minmax(220px, 280px)', justifyContent: 'center' }}>
           <div className="field"><label>Keys: damaging · tolerated</label><input type="text" value={keysText} maxLength={2} onChange={(e) => setKeysText(e.target.value.toUpperCase())} /></div>
         </div>
         {debug && <div className="debug-panel"><h4>DEBUG</h4><button className="btn btn-sm" onClick={() => onSimulate(cfg)}>Simulate full session</button></div>}
-        <div className="row" style={{ justifyContent: 'space-between', marginTop: 10 }}>
-          <button className="btn btn-primary" disabled={!valid} onClick={() => onStart(cfg)} style={{ padding: '12px 26px', fontSize: 16 }}>Start</button>
-          <div className="row">
-            {last && !history.some((h) => h.session_id === last.meta.session_id) && <button className="btn btn-sm" onClick={() => onOpenSession(last)}>Open last session ({last.trials.length} trials)</button>}
-            <button className="btn btn-sm" onClick={() => fileRef.current?.click()}>Open session file…</button>
-            <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])} />
-          </div>
-        </div>
-        <p className="save-note">
+        <p className="save-note" style={{ margin: '14px auto 0' }}>
           <b>You don't have to finish in one sitting.</b> Pause at any point (<kbd>Esc</kbd>, or the Pause button on a phone) and choose <b>Stop &amp; save</b>, or just close the tab;
           your answers are saved in this browser every few mutations. When you come back they're listed under <b>Your attempts</b>, and your next run carries on with mutations you haven't seen yet.
         </p>
+        {last && !history.some((h) => h.session_id === last.meta.session_id) && <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}><button className="btn btn-sm" onClick={() => onOpenSession(last)}>Open last session ({last.trials.length} trials)</button></div>}
+        <button className="btn btn-primary" disabled={!valid} onClick={() => onStart(cfg)} style={{ display: 'block', width: '100%', padding: '14px 26px', fontSize: 17, marginTop: 22 }}>Start</button>
         <p className="note" style={{ marginTop: 22 }}>
           Data: <a href="https://proteingym.org" target="_blank" rel="noreferrer">ProteinGym</a> (Notin et al.) deep mutational scans, alignments and model scores;
           structures from the <a href="https://alphafold.ebi.ac.uk" target="_blank" rel="noreferrer">AlphaFold DB</a> (CC BY 4.0).
