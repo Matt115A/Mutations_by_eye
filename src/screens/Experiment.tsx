@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LiveBoard } from '../components/LiveBoard';
+import type { HumanBaseline } from '../lib/bioai';
 import { Tour } from '../components/Tour';
 import { ChemistryPanel, MsaPanel, MutationHeader, StructurePanel } from '../components/TrialPanels';
 import { loadStructure } from '../lib/dataset';
@@ -18,7 +19,7 @@ const isNarrow = () => typeof innerWidth !== 'undefined' && innerWidth <= 760;
 const noFocus = { tabIndex: -1, onMouseDown: (e: React.MouseEvent) => e.preventDefault() };
 const fmtClock = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
-export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa: string; models: ModelInfo[]; onEnd: (s: Session) => void }) {
+export function Experiment({ core, aa, models, onEnd, human }: { core: SessionCore; aa: string; models: ModelInfo[]; onEnd: (s: Session) => void; human?: HumanBaseline | null }) {
   const [state, setState] = useState<State>(core.phase?.intro ? 'intro' : 'trial');
   const [stim, setStim] = useState<{ v: Variant; block: number } | null>(() => core.nextStimulus());
   const [last, setLast] = useState<TrialRecord | null>(null);
@@ -128,7 +129,7 @@ export function Experiment({ core, aa, models, onEnd }: { core: SessionCore; aa:
         <span><span className="muted">Time</span> <b>{fmtClock(clock)}</b></span>
         {touch ? <button className="btn btn-sm hud-pause" {...noFocus} onClick={togglePause}>Pause</button> : <span className="muted hud-esc">Esc to pause or stop · progress is saved</span>}
         <button className="btn btn-sm hud-tour" data-tour="tour-button" {...noFocus} onClick={openTour} title="A guided tour of everything on this screen">Tour</button>
-        <span data-tour="board" className="hud-board"><LiveBoard seen={seen.current} correct={core.trials.map((t) => t.correct)} models={models} window={20} /></span>
+        <span data-tour="board" className="hud-board"><LiveBoard human={human} seen={seen.current} correct={core.trials.map((t) => t.correct)} models={models} window={20} /></span>
       </div>
       {v && (
         <>
